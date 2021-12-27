@@ -8,5 +8,5 @@ mod tests {
 }
 
 pub fn hello(){
-    println!("{:?}", "hello");
+    eprintln!("{:?}", "hello")
 }
