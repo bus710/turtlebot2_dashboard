@@ -11,10 +11,18 @@ use anyhow::Result;
 use crossbeam_channel::unbounded;
 use flutter_rust_bridge::rust2dart::TaskCallback;
 use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
+use serialport;
 
 pub fn hello2() -> Result<()> {
     eprintln!("{:?}", "hello2");
     parse();
 
     Ok(())
+}
+
+pub fn enum_ports() {
+    let ports = serialport::available_ports().expect("No ports found!");
+    for p in ports {
+        println!("{}", p.port_name);
+    }
 }
