@@ -3,6 +3,10 @@
 set -e
 
 remove_all(){
+    term_color_red
+    echo "REMOVE TARGET"
+    term_color_white
+
     rm -rf ./target
 }
 
@@ -28,6 +32,10 @@ cargo_make () {
 }
 
 move () {
+    term_color_red
+    echo "MOVE to DLIB"
+    term_color_white
+
     DLIB="dashboard/dlib"
     rm -rf $DLIB
     mkdir -p $DLIB
@@ -47,7 +55,7 @@ term_color_white () {
 
 byebye () {
     term_color_red
-    echo "the library is ready"
+    echo "The library is ready under DLIB"
     term_color_white
 }
 
