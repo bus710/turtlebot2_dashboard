@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(runner LANGUAGES CXX)
 
-set(BINARY_NAME "ui")
-set(APPLICATION_ID "com.example.ui")
+set(BINARY_NAME "dashboard")
+set(APPLICATION_ID "com.example.dashboard")
 
 cmake_policy(SET CMP0063 NEW)
 

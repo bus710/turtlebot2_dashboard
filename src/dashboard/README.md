@@ -1,4 +1,4 @@
-# ui
+# dashboard
 
 A new Flutter project.
 
