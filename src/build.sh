@@ -2,6 +2,22 @@
 
 set -e
 
+hide_main(){
+    term_color_red
+    echo "HIDE MAIN"
+    term_color_white
+
+    mv lib/turtlebot2/src/main.rs .
+}
+
+recover_main(){
+    term_color_red
+    echo "RECOVER MAIN"
+    term_color_white
+
+    mv ./main.rs lib/turtlebot2/src
+}
+
 remove_all(){
     term_color_red
     echo "REMOVE TARGET"
@@ -60,9 +76,11 @@ byebye () {
 }
 
 trap term_color_white EXIT
+hide_main
 remove_all
 codegen
 cargo_make
 move
 remove_all
+recover_main
 byebye
