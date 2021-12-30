@@ -32,11 +32,16 @@ pub fn open_port(port_name: String) {
     let mut port = serialport::new(port_name, 115200)
         .open()
         .expect("Open port");
-    port.set_timeout(Duration::from_millis(2000));
+    port.set_timeout(Duration::from_millis(1000));
 
     for i in 0..3 {
         let len = port.read(&mut buffer).expect("Read failed");
+        if len < 64 {
+            eprintln!("{:?}", len);
+            thread::sleep(Duration::from_millis(256));
+            continue;
+        }
         eprintln!("{:?} / {:?} \n", len, &buffer[..len]);
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(256));
     }
 }
