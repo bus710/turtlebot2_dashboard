@@ -11,7 +11,7 @@ use anyhow::Result;
 use crossbeam_channel::unbounded;
 use flutter_rust_bridge::rust2dart::TaskCallback;
 use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
-use serialport;
+use serialport::SerialPortInfo;
 
 pub fn hello2() -> Result<()> {
     eprintln!("{:?}", "hello2");
@@ -20,9 +20,23 @@ pub fn hello2() -> Result<()> {
     Ok(())
 }
 
-pub fn enum_ports() {
+pub fn enum_ports() -> Result<Vec<SerialPortInfo>> {
     let ports = serialport::available_ports().expect("No ports found!");
-    for p in ports {
-        println!("{}", p.port_name);
+    Ok(ports)
+}
+
+pub fn open_port(port_name: String) {
+    eprintln!("{:?}", port_name);
+
+    let mut buffer = [0; 4096];
+    let mut port = serialport::new(port_name, 115200)
+        .open()
+        .expect("Open port");
+    port.set_timeout(Duration::from_millis(2000));
+
+    for i in 0..3 {
+        let len = port.read(&mut buffer).expect("Read failed");
+        eprintln!("{:?} / {:?} \n", len, &buffer[..len]);
+        thread::sleep(Duration::from_millis(500));
     }
 }
