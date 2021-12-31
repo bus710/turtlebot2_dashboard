@@ -41,7 +41,29 @@ pub fn open_port(port_name: String) {
             thread::sleep(Duration::from_millis(256));
             continue;
         }
-        eprintln!("{:?} / {:?} \n", len, &buffer[..len]);
+        eprintln!("{:?} - {:?} \n", len, &buffer[..len]);
+        search_headers(&buffer[..len]);
         thread::sleep(Duration::from_millis(256));
     }
+}
+
+use itertools::Itertools;
+
+pub fn search_headers(buffer: &[u8]) -> Result<u64> {
+    // let ret = buffer
+    //     .windows(2)
+    //     .position(|w| matches!(w, [0xaa, 0x55]))
+    //     .expect("Not found");
+    // eprintln!("=> {:?}", ret);
+
+    let mut v = Vec::new();
+    let itr = buffer.into_iter();
+    for (i, c) in itr.enumerate().skip(1) {
+        if buffer[i - 1] == 0xaa && buffer[i] == 0x55 {
+            v.push(i);
+        }
+    }
+
+    eprintln!("v - {:?}, \n", v);
+    Ok(0)
 }
