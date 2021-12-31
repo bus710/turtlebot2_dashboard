@@ -50,12 +50,6 @@ pub fn open_port(port_name: String) {
 use itertools::Itertools;
 
 pub fn search_headers(buffer: &[u8]) -> Result<u64> {
-    // let ret = buffer
-    //     .windows(2)
-    //     .position(|w| matches!(w, [0xaa, 0x55]))
-    //     .expect("Not found");
-    // eprintln!("=> {:?}", ret);
-
     let mut v = Vec::new();
     let itr = buffer.into_iter();
     for (i, c) in itr.enumerate().skip(1) {
@@ -63,7 +57,6 @@ pub fn search_headers(buffer: &[u8]) -> Result<u64> {
             v.push(i);
         }
     }
-
     eprintln!("v - {:?}, \n", v);
     Ok(0)
 }
