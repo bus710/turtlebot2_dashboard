@@ -42,21 +42,55 @@ pub fn open_port(port_name: String) {
             continue;
         }
         eprintln!("{:?} - {:?} \n", len, &buffer[..len]);
-        search_headers(&buffer[..len]);
+
+        // search for the preambles (0xaa, 0x55)
+        let h = search_header(&buffer[..len]).expect("Headers not found");
+        eprintln!("h - {:?}, \n", h);
+
+        //
+        let p = divide_packet(&buffer[..len], &h).expect("Packets not found");
+        for (i, c) in p.iter().enumerate() {
+            eprintln!("p - {:?}/{:?}", i, c);
+        }
+
+        // sleep
         thread::sleep(Duration::from_millis(256));
     }
 }
 
 use itertools::Itertools;
 
-pub fn search_headers(buffer: &[u8]) -> Result<u64> {
-    let mut v = Vec::new();
-    let itr = buffer.into_iter();
-    for (i, c) in itr.enumerate().skip(1) {
+pub fn search_header(buffer: &[u8]) -> Result<Vec<usize>> {
+    let mut h = Vec::new();
+    let buf = buffer.iter();
+    for (i, c) in buf.enumerate().skip(1) {
         if buffer[i - 1] == 0xaa && buffer[i] == 0x55 {
-            v.push(i);
+            h.push(i - 1);
         }
     }
-    eprintln!("v - {:?}, \n", v);
-    Ok(0)
+    Ok(h)
+}
+
+pub fn divide_packet<'a, 'b>(
+    buffer: &'a [u8],
+    h: &'b [usize],
+) -> Result<Vec<std::slice::Iter<'a, u8>>> {
+    //    Vec<&std::slice::Iter<'_, u8>>
+    let mut p = Vec::new();
+    let mut start = 0;
+    let mut end = 0;
+    let mut b;
+    for (i, c) in h.iter().enumerate() {
+        if i + 1 != h.len() {
+            start = h[i];
+            end = h[i + 1];
+        } else {
+            start = h[i];
+            end = buffer.len();
+        }
+        eprintln!("s/e - {:?}/{:?}", start, end);
+        b = buffer[start..end].iter().clone();
+        p.push(b);
+    }
+    Ok(p)
 }
