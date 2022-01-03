@@ -72,17 +72,17 @@ use std::slice::Iter;
 pub fn check_crc(buffer: &Iter<u8>) -> bool {
     let last = buffer.len() - 1;
     let checksum = buffer.as_slice()[last];
-    let mut accumulated: u16 = 0;
+    let mut acc: u8 = 0;
 
-    for (i, c) in buffer.clone().enumerate() {
-        if i == buffer.len() {
+    for (i, c) in buffer.clone().enumerate().skip(2) {
+        if i == last {
             break;
         }
-        accumulated = accumulated + *c as u16;
-        accumulated = accumulated & 0x00ff;
+        acc = acc ^ *c;
+        acc &= 0x00ff;
     }
-    eprintln!("crc - {:?} / {:?}", checksum, accumulated);
-    accumulated == checksum as u16
+    eprintln!("crc - {:?} / {:?}", checksum, acc);
+    acc == checksum
 }
 
 pub fn search_header(buffer: &[u8]) -> Result<Vec<usize>> {
