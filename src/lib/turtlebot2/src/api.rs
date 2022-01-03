@@ -37,7 +37,12 @@ pub fn open_port(port_name: String) {
         .expect("Open port");
     port.set_timeout(Duration::from_millis(1024));
 
+<<<<<<< HEAD
     for i in 0..3 {
+=======
+    let mut residue = Vec::new();
+    for i in 0..10 {
+>>>>>>> 786081cf8ce64441aedbcacfb5de3ee613c244a6
         let len = port.read(&mut buffer).expect("Read failed");
         if len < 70 {
             eprintln!("Not enough - {:?}", len);
@@ -45,13 +50,28 @@ pub fn open_port(port_name: String) {
             continue;
         }
 
+<<<<<<< HEAD
         eprintln!("total - {:?} / {:?}", len, &buffer[..len]);
+=======
+        eprintln!("total - {:?}", len);
+>>>>>>> 786081cf8ce64441aedbcacfb5de3ee613c244a6
         eprintln!();
 
         // search for the preambles (0xaa, 0x55)
         let h = search_header(&buffer[..len]).expect("Headers not found");
         eprintln!("header indexes - {:?}", h);
         eprintln!();
+
+        if h[0] != 0 {
+            eprintln!("residue packet - {:?}", residue);
+            eprintln!("broken packet - {:?}", &buffer[..h[0]]);
+
+            if residue.len() != 0 {
+                let tmp = merge_residue(&residue, &buffer[..h[0]]).expect("");
+                let correct_crc = check_crc(&tmp);
+                eprintln!("residue + broken (crc: {:?}) - {:?}", correct_crc, tmp);
+            }
+        }
 
         // divide packets by header found
         let packets = divide_packet(&buffer[..len], &h).expect("Packets not found");
@@ -60,7 +80,16 @@ pub fn open_port(port_name: String) {
             // check CRC and set the residue to pass to next iteration.
             let correct_crc = check_crc(&p.clone());
             if !correct_crc {
+<<<<<<< HEAD
                 eprintln!("CRC not matched");
+=======
+                if i == 0 {
+                    eprintln!("CRC not matched - residue from previous seems not used");
+                } else {
+                    eprintln!("CRC not matched");
+                }
+                residue = p.clone();
+>>>>>>> 786081cf8ce64441aedbcacfb5de3ee613c244a6
             } else {
                 //
             }
@@ -68,7 +97,7 @@ pub fn open_port(port_name: String) {
         eprintln!();
 
         // sleep
-        thread::sleep(Duration::from_millis(256)); // with 256 ms, the read returns about 1024 bytes
+        thread::sleep(Duration::from_millis(64)); // with 64 ms, the read returns about 220~350 bytes
 
         eprintln!("==================");
         eprintln!();
@@ -113,11 +142,10 @@ pub fn divide_packet(buffer: &[u8], h: &[usize]) -> Result<Vec<Vec<u8>>> {
             start = h[i];
             end = buffer.len(); // until the end
         }
-        eprintln!("s/e - {:?}/{:?}", start, end);
+        // eprintln!("s/e - {:?}/{:?}", start, end);
         let b = buffer[start..end].to_vec().clone();
         p.push(b);
     }
-    eprintln!();
     Ok(p)
 }
 
