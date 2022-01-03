@@ -50,16 +50,18 @@ pub fn open_port(port_name: String) {
         eprintln!();
 
         // search for the preambles (0xaa, 0x55)
-        let h = search_header(&buffer[..len]).expect("Headers not found");
-        eprintln!("header indexes - {:?}", h);
+        let headers = search_header(&buffer[..len]).expect("Headers not found");
+        eprintln!("header indexes - {:?}", headers);
         eprintln!();
 
-        if h[0] != 0 {
+        // if the first preambles set is not located at 0 of the buffer,
+        // the residue from previous iteration should be used to make a complete packet
+        if headers[0] != 0 {
             eprintln!("residue packet - {:?}", residue);
-            eprintln!("broken packet - {:?}", &buffer[..h[0]]);
+            eprintln!("broken packet - {:?}", &buffer[..headers[0]]);
 
             if residue.len() != 0 {
-                let tmp = merge_residue(&residue, &buffer[..h[0]]).expect("");
+                let tmp = merge_residue(&residue, &buffer[..headers[0]]).expect("");
                 let correct_crc = check_crc(&tmp);
                 eprintln!("\n");
                 eprintln!("residue + broken (crc: {:?}) - {:?}", correct_crc, tmp);
@@ -68,7 +70,7 @@ pub fn open_port(port_name: String) {
         }
 
         // divide packets by header found
-        let packets = divide_packet(&buffer[..len], &h).expect("Packets not found");
+        let packets = divide_packet(&buffer[..len], &headers).expect("Packets not found");
         for (i, p) in packets.iter().enumerate() {
             eprintln!("p - {:?}/{:?}", i, p.as_slice());
             // check CRC and set the residue to pass to next iteration.
@@ -77,11 +79,12 @@ pub fn open_port(port_name: String) {
                 if i == 0 {
                     eprintln!("CRC not matched - residue from previous seems not used");
                 } else {
-                    eprintln!("CRC not matched");
+                    eprintln!("CRC not matched - pass to the next");
                 }
-                residue = p.clone();
+                residue = p.clone(); // pass to the next iteration
             } else {
                 //
+                residue = Vec::new(); // clear so don't pass to the next iteration
             }
         }
         eprintln!();
@@ -98,10 +101,6 @@ pub fn merge_residue(residue: &[u8], buffer: &[u8]) -> Result<Vec<u8>> {
     let mut a = residue.clone().to_vec();
     let b = buffer.to_vec();
     a.extend(b);
-
-    // for (&x, p) in tmp.iter().zip(buffer.iter_mut()) {
-    //     *p = x;
-    // }
 
     Ok(a)
 }
