@@ -47,22 +47,48 @@ pub fn open_port(port_name: String) {
         let h = search_header(&buffer[..len]).expect("Headers not found");
         eprintln!("h - {:?}, \n", h);
 
-        //
-        let p = divide_packet(&buffer[..len], &h).expect("Packets not found");
-        for (i, c) in p.iter().enumerate() {
-            eprintln!("p - {:?}/{:?}", i, c);
+        // divide packets by header found
+        let packets = divide_packet(&buffer[..len], &h).expect("Packets not found");
+        for (i, c) in packets.iter().enumerate() {
+            eprintln!("p - {:?}/{:?}", i, c.as_slice());
+            let correct_crc = check_crc(c);
+            if !correct_crc {
+                eprintln!("CRC not matched");
+            }
         }
+
+        // check check sum for each packet
 
         // sleep
         thread::sleep(Duration::from_millis(256));
+
+        eprintln!("==================")
     }
 }
 
 use itertools::Itertools;
+use std::slice::Iter;
+
+pub fn check_crc(buffer: &Iter<u8>) -> bool {
+    let last = buffer.len() - 1;
+    let checksum = buffer.as_slice()[last];
+    let mut accumulated: u16 = 0;
+
+    for (i, c) in buffer.clone().enumerate() {
+        if i == buffer.len() {
+            break;
+        }
+        accumulated = accumulated + *c as u16;
+        accumulated = accumulated & 0x00ff;
+    }
+    eprintln!("crc - {:?} / {:?}", checksum, accumulated);
+    accumulated == checksum as u16
+}
 
 pub fn search_header(buffer: &[u8]) -> Result<Vec<usize>> {
     let mut h = Vec::new();
     let buf = buffer.iter();
+    // Need to skip the first byte since this loop accesses [index-1]
     for (i, c) in buf.enumerate().skip(1) {
         if buffer[i - 1] == 0xaa && buffer[i] == 0x55 {
             h.push(i - 1);
@@ -71,25 +97,22 @@ pub fn search_header(buffer: &[u8]) -> Result<Vec<usize>> {
     Ok(h)
 }
 
-pub fn divide_packet<'a, 'b>(
-    buffer: &'a [u8],
-    h: &'b [usize],
-) -> Result<Vec<std::slice::Iter<'a, u8>>> {
-    //    Vec<&std::slice::Iter<'_, u8>>
+pub fn divide_packet<'a, 'b>(buffer: &'a [u8], h: &'b [usize]) -> Result<Vec<Iter<'a, u8>>> {
     let mut p = Vec::new();
     let mut start = 0;
     let mut end = 0;
-    let mut b;
     for (i, c) in h.iter().enumerate() {
+        // use the indices from h.
+        // or use bytes until the end if currently last part.
         if i + 1 != h.len() {
             start = h[i];
             end = h[i + 1];
         } else {
             start = h[i];
-            end = buffer.len();
+            end = buffer.len(); // until the end
         }
         eprintln!("s/e - {:?}/{:?}", start, end);
-        b = buffer[start..end].iter().clone();
+        let b = buffer[start..end].iter().clone();
         p.push(b);
     }
     Ok(p)
