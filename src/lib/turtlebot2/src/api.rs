@@ -42,7 +42,7 @@ pub fn open_port(port_name: String) {
         let len = port.read(&mut buffer).expect("Read failed");
         if len < 70 {
             eprintln!("Not enough - {:?}", len);
-            thread::sleep(Duration::from_millis(256));
+            thread::sleep(Duration::from_millis(64));
             continue;
         }
 
