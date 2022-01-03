@@ -64,7 +64,7 @@ pub fn open_port(port_name: String) {
                 let tmp = merge_residue(&residue, &buffer[..headers[0]]).expect("");
                 let correct_crc = check_crc(&tmp);
                 eprintln!("\n");
-                eprintln!("residue + broken (crc: {:?}) - {:?}", correct_crc, tmp);
+                eprintln!("residue & broken (crc: {:?}) - {:?}", correct_crc, tmp);
                 eprintln!("\n");
             }
         }
@@ -72,9 +72,10 @@ pub fn open_port(port_name: String) {
         // divide packets by header found
         let packets = divide_packet(&buffer[..len], &headers).expect("Packets not found");
         for (i, p) in packets.iter().enumerate() {
-            eprintln!("p - {:?}/{:?}", i, p.as_slice());
             // check CRC and set the residue to pass to next iteration.
             let correct_crc = check_crc(&p.clone());
+            eprintln!("p (index: {:?}, crc: {:?}) - {:?}", i, correct_crc, p.as_slice());
+
             if !correct_crc {
                 if i == 0 {
                     eprintln!("CRC not matched - residue from previous seems not used");
