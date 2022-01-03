@@ -79,9 +79,7 @@ pub fn check_crc(buffer: &Iter<u8>) -> bool {
             break;
         }
         acc = acc ^ *c;
-        acc &= 0x00ff;
     }
-    eprintln!("crc - {:?} / {:?}", checksum, acc);
     acc == checksum
 }
 
