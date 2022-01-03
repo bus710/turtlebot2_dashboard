@@ -69,20 +69,6 @@ pub fn open_port(port_name: String) {
 use itertools::Itertools;
 use std::slice::Iter;
 
-pub fn check_crc(buffer: &Iter<u8>) -> bool {
-    let last = buffer.len() - 1;
-    let checksum = buffer.as_slice()[last];
-    let mut acc: u8 = 0;
-
-    for (i, c) in buffer.clone().enumerate().skip(2) {
-        if i == last {
-            break;
-        }
-        acc = acc ^ *c;
-    }
-    acc == checksum
-}
-
 pub fn search_header(buffer: &[u8]) -> Result<Vec<usize>> {
     let mut h = Vec::new();
     let buf = buffer.iter();
@@ -114,4 +100,18 @@ pub fn divide_packet<'a, 'b>(buffer: &'a [u8], h: &'b [usize]) -> Result<Vec<Ite
         p.push(b);
     }
     Ok(p)
+}
+
+pub fn check_crc(buffer: &Iter<u8>) -> bool {
+    let last = buffer.len() - 1;
+    let checksum = buffer.as_slice()[last];
+    let mut acc: u8 = 0;
+
+    for (i, c) in buffer.clone().enumerate().skip(2) {
+        if i == last {
+            break;
+        }
+        acc = acc ^ *c;
+    }
+    acc == checksum
 }
