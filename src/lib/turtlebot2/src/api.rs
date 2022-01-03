@@ -37,20 +37,12 @@ pub fn open_port(port_name: String) {
         .expect("Open port");
     port.set_timeout(Duration::from_millis(1024));
 
-    let mut residue = Vec::new();
     for i in 0..3 {
         let len = port.read(&mut buffer).expect("Read failed");
         if len < 70 {
-            eprintln!("not enough - {:?}", len);
+            eprintln!("Not enough - {:?}", len);
             thread::sleep(Duration::from_millis(256));
             continue;
-        }
-
-        if residue.len() != 0 {
-            let tmp = merge_residue(&residue, &buffer[..len]).expect("");
-            buffer = tmp.as_slice().try_into().expect("Too many");
-
-            eprintln!("residue found");
         }
 
         eprintln!("total - {:?} / {:?}", len, &buffer[..len]);
@@ -69,9 +61,8 @@ pub fn open_port(port_name: String) {
             let correct_crc = check_crc(&p.clone());
             if !correct_crc {
                 eprintln!("CRC not matched");
-                residue = p.clone();
             } else {
-                residue = Vec::new();
+                //
             }
         }
         eprintln!();
@@ -88,6 +79,11 @@ pub fn merge_residue(residue: &[u8], buffer: &[u8]) -> Result<Vec<u8>> {
     let mut a = residue.clone().to_vec();
     let b = buffer.to_vec();
     a.extend(b);
+
+    // for (&x, p) in tmp.iter().zip(buffer.iter_mut()) {
+    //     *p = x;
+    // }
+
     Ok(a)
 }
 
