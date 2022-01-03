@@ -57,15 +57,14 @@ pub fn open_port(port_name: String) {
         // if the first preambles set is not located at 0 of the buffer,
         // the residue from previous iteration should be used to make a complete packet
         if headers[0] != 0 {
-            eprintln!("residue packet - {:?}", residue);
-            eprintln!("broken packet - {:?}", &buffer[..headers[0]]);
+            // eprintln!("residue packet - {:?}", residue);
+            // eprintln!("broken packet - {:?}", &buffer[..headers[0]]);
 
             if residue.len() != 0 {
                 let tmp = merge_residue(&residue, &buffer[..headers[0]]).expect("");
                 let correct_crc = check_crc(&tmp);
-                eprintln!("\n");
                 eprintln!("residue & broken (crc: {:?}) - {:?}", correct_crc, tmp);
-                eprintln!("\n");
+                eprintln!();
             }
         }
 
