@@ -1,5 +1,5 @@
 mod api;
-mod parser;
+mod packet;
 
 const PORT: &str = "/dev/ttyUSB0";
 

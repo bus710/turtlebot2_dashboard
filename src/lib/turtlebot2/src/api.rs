@@ -14,11 +14,11 @@ use serialport::SerialPortInfo;
 use flutter_rust_bridge::rust2dart::TaskCallback;
 use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
 
-use crate::parser::*;
+use crate::packet::*;
 
 pub fn hello2() -> Result<()> {
     eprintln!("{:?}", "hello2");
-    parse();
+    hello();
 
     Ok(())
 }
@@ -69,11 +69,11 @@ pub fn open_port(port_name: String) {
         }
 
         // divide packets by header found
-        let packets = divide_packet(&buffer[..len], &headers).expect("Packets not found");
-        for (i, p) in packets.iter().enumerate() {
+        let raw_packets = divide_packet(&buffer[..len], &headers).expect("Packets not found");
+        for (i, rp) in raw_packets.iter().enumerate() {
             // check CRC and set the residue to pass to next iteration.
-            let correct_crc = check_crc(&p.clone());
-            eprintln!("p (index: {:?}, crc: {:?}) - {:?}", i, correct_crc, p.as_slice());
+            let correct_crc = check_crc(&rp.clone());
+            eprintln!("raw packet (index: {:?}, crc: {:?}) - {:?}", i, correct_crc, rp.as_slice());
 
             if !correct_crc {
                 if i == 0 {
@@ -81,7 +81,7 @@ pub fn open_port(port_name: String) {
                 } else {
                     eprintln!("CRC not matched - pass to the next");
                 }
-                residue = p.clone(); // pass to the next iteration
+                residue = rp.clone(); // pass to the next iteration
             } else {
                 //
                 residue = Vec::new(); // clear so don't pass to the next iteration
