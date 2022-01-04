@@ -59,9 +59,9 @@ pub fn open_port(port_name: String) {
         if headers[0] != 0 {
             // eprintln!("residue packet - {:?}", residue);
             // eprintln!("broken packet - {:?}", &buffer[..headers[0]]);
-
+            let broken_packet = &packet[..headers[0]];
             if residue.len() != 0 {
-                let tmp = merge_residue(&residue, &packet[..headers[0]]).expect("");
+                let tmp = merge_residue(&residue, broken_packet).expect("");
                 let correct_crc = check_crc(&tmp);
                 eprintln!("residue & broken (crc: {:?}) - {:?}", correct_crc, tmp);
                 eprintln!();
