@@ -14,7 +14,7 @@ use serialport::SerialPortInfo;
 use flutter_rust_bridge::rust2dart::TaskCallback;
 use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
 
-use crate::packet::*;
+use crate::turtlebot2::*;
 
 pub fn hello2() -> Result<()> {
     eprintln!("{:?}", "hello2");
@@ -31,7 +31,7 @@ pub fn enum_ports() -> Result<Vec<SerialPortInfo>> {
 pub fn open_port(port_name: String) {
     eprintln!("{:?}", port_name);
 
-    let mut buffer = [0; 4096];
+    let mut packet = [0; 4096];
     let mut port = serialport::new(port_name, 115200)
         .open()
         .expect("Open port");
@@ -39,7 +39,7 @@ pub fn open_port(port_name: String) {
 
     let mut residue = Vec::new();
     for i in 0..10 {
-        let len = port.read(&mut buffer).expect("Read failed");
+        let len = port.read(&mut packet).expect("Read failed");
         if len < 70 {
             eprintln!("Not enough - {:?}", len);
             thread::sleep(Duration::from_millis(64));
@@ -50,7 +50,7 @@ pub fn open_port(port_name: String) {
         eprintln!();
 
         // search for the preambles (0xaa, 0x55)
-        let headers = search_header(&buffer[..len]).expect("Headers not found");
+        let headers = search_header(&packet[..len]).expect("Headers not found");
         eprintln!("header indexes - {:?}", headers);
         eprintln!();
 
@@ -61,7 +61,7 @@ pub fn open_port(port_name: String) {
             // eprintln!("broken packet - {:?}", &buffer[..headers[0]]);
 
             if residue.len() != 0 {
-                let tmp = merge_residue(&residue, &buffer[..headers[0]]).expect("");
+                let tmp = merge_residue(&residue, &packet[..headers[0]]).expect("");
                 let correct_crc = check_crc(&tmp);
                 eprintln!("residue & broken (crc: {:?}) - {:?}", correct_crc, tmp);
                 eprintln!();
@@ -69,11 +69,16 @@ pub fn open_port(port_name: String) {
         }
 
         // divide packets by header found
-        let raw_packets = divide_packet(&buffer[..len], &headers).expect("Packets not found");
+        let raw_packets = divide_packet(&packet[..len], &headers).expect("Packets not found");
         for (i, rp) in raw_packets.iter().enumerate() {
             // check CRC and set the residue to pass to next iteration.
             let correct_crc = check_crc(&rp.clone());
-            eprintln!("raw packet (index: {:?}, crc: {:?}) - {:?}", i, correct_crc, rp.as_slice());
+            eprintln!(
+                "raw packet (index: {:?}, crc: {:?}) - {:?}",
+                i,
+                correct_crc,
+                rp.as_slice()
+            );
 
             if !correct_crc {
                 if i == 0 {
@@ -97,27 +102,27 @@ pub fn open_port(port_name: String) {
     }
 }
 
-pub fn merge_residue(residue: &[u8], buffer: &[u8]) -> Result<Vec<u8>> {
+pub fn merge_residue(residue: &[u8], broken_packet: &[u8]) -> Result<Vec<u8>> {
     let mut a = residue.clone().to_vec();
-    let b = buffer.to_vec();
+    let b = broken_packet.to_vec();
     a.extend(b);
 
     Ok(a)
 }
 
-pub fn search_header(buffer: &[u8]) -> Result<Vec<usize>> {
+pub fn search_header(packet: &[u8]) -> Result<Vec<usize>> {
     let mut h = Vec::new();
-    let buf = buffer.iter();
+    let buf = packet.iter();
     // Need to skip the first byte since this loop accesses [index-1]
     for (i, c) in buf.enumerate().skip(1) {
-        if buffer[i - 1] == 0xaa && buffer[i] == 0x55 {
+        if packet[i - 1] == 0xaa && packet[i] == 0x55 {
             h.push(i - 1);
         }
     }
     Ok(h)
 }
 
-pub fn divide_packet(buffer: &[u8], h: &[usize]) -> Result<Vec<Vec<u8>>> {
+pub fn divide_packet(packet: &[u8], h: &[usize]) -> Result<Vec<Vec<u8>>> {
     let mut p = Vec::new();
     let mut start = 0;
     let mut end = 0;
@@ -129,21 +134,21 @@ pub fn divide_packet(buffer: &[u8], h: &[usize]) -> Result<Vec<Vec<u8>>> {
             end = h[i + 1];
         } else {
             start = h[i];
-            end = buffer.len(); // until the end
+            end = packet.len(); // until the end => residue
         }
         // eprintln!("s/e - {:?}/{:?}", start, end);
-        let b = buffer[start..end].to_vec().clone();
+        let b = packet[start..end].to_vec().clone();
         p.push(b);
     }
     Ok(p)
 }
 
-pub fn check_crc(buffer: &Vec<u8>) -> bool {
-    let last = buffer.len() - 1;
-    let checksum = buffer.as_slice()[last];
+pub fn check_crc(packet: &Vec<u8>) -> bool {
+    let last = packet.len() - 1;
+    let checksum = packet.as_slice()[last];
     let mut acc: u8 = 0;
 
-    for (i, c) in buffer.iter().enumerate().skip(2) {
+    for (i, c) in packet.iter().enumerate().skip(2) {
         if i == last {
             break;
         }
@@ -151,3 +156,5 @@ pub fn check_crc(buffer: &Vec<u8>) -> bool {
     }
     acc == checksum
 }
+
+pub fn format_feedback() {}

@@ -1,5 +1,5 @@
 mod api;
-mod packet;
+mod turtlebot2;
 
 const PORT: &str = "/dev/ttyUSB0";
 
