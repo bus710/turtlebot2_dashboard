@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+use std::os::raw;
 use std::slice::Iter;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{self, mpsc, Arc};
@@ -14,7 +15,7 @@ use serialport::SerialPortInfo;
 use flutter_rust_bridge::rust2dart::TaskCallback;
 use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
 
-use crate::turtlebot2::*;
+use crate::turtlebot2::{self, *};
 
 pub fn hello2() -> Result<()> {
     eprintln!("{:?}", "hello2");
@@ -89,6 +90,7 @@ pub fn open_port(port_name: String) {
                 residue = raw_packet.clone(); // pass to the next iteration
             } else {
                 //
+                format_feedback(raw_packet);
                 residue = Vec::new(); // clear so don't pass to the next iteration
             }
         }
@@ -157,8 +159,6 @@ pub fn check_crc(packet: &Vec<u8>) -> bool {
     acc == checksum
 }
 
-pub fn format_feedback(raw_packet: &Vec<u8>) {}
-
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn get_epoch_ms() -> u128 {
@@ -166,4 +166,12 @@ fn get_epoch_ms() -> u128 {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_millis()
+}
+
+pub fn format_feedback(raw_packet: &Vec<u8>) {
+    let total_len = raw_packet[2].clone();
+    let index = 3;
+
+    let f = turtlebot2::Feedback::new();
+    eprintln!("f - {:?}", f);
 }

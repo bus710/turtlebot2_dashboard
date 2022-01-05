@@ -1,4 +1,8 @@
 #![allow(unused)]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
+
+use derivative::*;
 
 // ====================================
 
@@ -65,8 +69,12 @@ const FDB_SIZE_CONTROLLER_INFO: i32 = 13;
 
 // ====================================
 
-struct Feedback {
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
+pub struct Feedback {
+    #[derivative(Default(value = "0"))]
     available_content: i32,
+    #[derivative(Default(value = "0"))]
     time_stamp: u128,
     basic_sensor: BasicSensor,
     docking_ir: DockingIR,
@@ -81,6 +89,8 @@ struct Feedback {
     controller_info: ControllerInfo,
 }
 
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct BasicSensor {
     time_stamp: u16,
     bumper: u8,
@@ -95,45 +105,64 @@ struct BasicSensor {
     battery: u8,
     overcurrent_flags: u8,
 }
+
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct DockingIR {
     right_signal: u8,
     central_signal: u8,
     left_signal: u8,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct InertialSensor {
     angle: u16,
     andle_rate: u16,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct Cliff {
     right_cliff_sensor: u16,
     central_cliff_sensor: u16,
     left_cliff_sensor: u16,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct Current {
     left_motor: u8,
     right_motor: u8,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct HardwareVersion {
     patch: u8,
     minor: u8,
     major: u8,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct FirmwareVersion {
     patch: u8,
     minor: u8,
     major: u8,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct Gyro {
     frame_id: u8,
     followed_data_length: u8,
     raw_gyro_data_array: [RawGyro; 3],
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 
 struct RawGyro {
     x: u16,
     y: u16,
     z: u16,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 
 struct GeneralPurposeInput {
     digiral_input: u16,
@@ -142,16 +171,40 @@ struct GeneralPurposeInput {
     analog_input_ch2: u16,
     analog_input_ch3: u16,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct UniqueDeviceIdentifier {
     udid0: u32,
     udid1: u32,
     udid2: u32,
 }
+#[derive(Debug, Derivative)]
+#[derivative(Default)]
 struct ControllerInfo {
     is_user_configured: u8,
     p_gain: u32,
     i_gain: u32,
     d_gain: u32,
+}
+
+impl Feedback {
+    pub fn new() -> Feedback {
+        Feedback {
+            available_content: 0,
+            time_stamp: 0,
+            basic_sensor: BasicSensor::default(),
+            docking_ir: DockingIR::default(),
+            inertial_sensor: InertialSensor::default(),
+            cliff: Cliff::default(),
+            current: Current::default(),
+            hardware_version: HardwareVersion::default(),
+            firmware_version: FirmwareVersion::default(),
+            gyro: Gyro::default(),
+            general_purpose_input: GeneralPurposeInput::default(),
+            unique_device_identifier: UniqueDeviceIdentifier::default(),
+            controller_info: ControllerInfo::default(),
+        }
+    }
 }
 
 pub fn hello() {
