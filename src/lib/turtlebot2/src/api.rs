@@ -189,8 +189,7 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
         let id = num::FromPrimitive::from_u8(raw_packet[index as usize]);
         match id {
             Some(FeedbackId::BasicSensor) => {
-                eprintln!(">>>>>");
-                f.available_content |= (1 << turtlebot2::FeedbackId::BasicSensor as u32);
+                f.basic_sensor.valid = true;
                 f.basic_sensor.time_stamp = raw_packet[2 + index as usize] as u16;
                 f.basic_sensor.time_stamp |= (raw_packet[3 + index as usize] as u16).shl(8);
                 f.basic_sensor.bumper = raw_packet[4 + index as usize];
@@ -209,14 +208,14 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_BASIC_SENSOR_DATA + 2;
             }
             Some(FeedbackId::DockingIR) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::DockingIR as u32);
+                f.docking_ir.valid = true;
                 f.docking_ir.right_signal = raw_packet[2 + index as usize];
                 f.docking_ir.central_signal = raw_packet[3 + index as usize];
                 f.docking_ir.left_signal = raw_packet[4 + index as usize];
                 index += turtlebot2::FDB_SIZE_DOCKING_IR + 2;
             }
             Some(FeedbackId::InertialSensor) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::InertialSensor as u32);
+                f.inertial_sensor.valid = true;
                 f.inertial_sensor.angle = raw_packet[2 + index as usize] as u16;
                 f.inertial_sensor.angle |= (raw_packet[3 + index as usize] as u16).shl(8);
                 f.inertial_sensor.angle_rate = raw_packet[4 + index as usize] as u16;
@@ -224,7 +223,7 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_INERTIAL_SENSOR + 2;
             }
             Some(FeedbackId::Cliff) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::Cliff as u32);
+                f.cliff.valid = true;
                 f.cliff.right_cliff_sensor = raw_packet[2 + index as usize] as u16;
                 f.cliff.right_cliff_sensor |= (raw_packet[3 + index as usize] as u16).shl(8);
                 f.cliff.central_cliff_sensor = raw_packet[4 + index as usize] as u16;
@@ -234,27 +233,27 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_CLIFF + 2;
             }
             Some(FeedbackId::Current) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::Current as u32);
+                f.current.valid = true;
                 f.current.left_motor = raw_packet[2 + index as usize];
                 f.current.right_motor = raw_packet[3 + index as usize];
                 index += turtlebot2::FDB_SIZE_CURRENT + 2;
             }
             Some(FeedbackId::HardwareVersion) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::HardwareVersion as u32);
+                f.hardware_version.valid = true;
                 f.hardware_version.patch = raw_packet[2 + index as usize];
                 f.hardware_version.minor = raw_packet[3 + index as usize];
                 f.hardware_version.major = raw_packet[4 + index as usize];
                 index += turtlebot2::FDB_SIZE_HARDWARE_VERSION + 2;
             }
             Some(FeedbackId::FirmwareVersion) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::FirmwareVersion as u32);
+                f.firmware_version.valid = true;
                 f.firmware_version.patch = raw_packet[2 + index as usize];
                 f.firmware_version.minor = raw_packet[3 + index as usize];
                 f.firmware_version.major = raw_packet[4 + index as usize];
                 index += turtlebot2::FDB_SIZE_FIRMWARE_VERSION + 2;
             }
             Some(FeedbackId::RawDataOf3AxisGyro) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::RawDataOf3AxisGyro as u32);
+                f.gyro.valid = true;
                 f.gyro.frame_id = raw_packet[2 + index as usize];
                 f.gyro.followed_data_length = raw_packet[3 + index as usize];
                 //
@@ -287,7 +286,7 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 }
             }
             Some(FeedbackId::GeneralPurposeInput) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::GeneralPurposeInput as u32);
+                f.general_purpose_input.valid = true;
                 f.general_purpose_input.d_ch0 = raw_packet[2 + index as usize] as u16;
                 f.general_purpose_input.d_ch0 |= (raw_packet[3 + index as usize] as u16).shl(8);
                 //
@@ -305,7 +304,7 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_GENERAL_PURPOSE_OUTPUT + 2;
             }
             Some(FeedbackId::UniqueDeviceId) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::UniqueDeviceId as u32);
+                f.unique_device_id.valid = true;
                 f.unique_device_id.udid0 = raw_packet[2 + index as usize] as u32;
                 f.unique_device_id.udid0 |= (raw_packet[3 + index as usize] as u32).shl(8);
                 f.unique_device_id.udid0 |= (raw_packet[4 + index as usize] as u32).shl(16);
@@ -323,7 +322,7 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER + 2;
             }
             Some(FeedbackId::ControllerInfo) => {
-                f.available_content |= (1 << turtlebot2::FeedbackId::ControllerInfo as u32);
+                f.controller_info.valid = true;
                 f.controller_info.p_gain = raw_packet[2 + index as usize] as u32;
                 f.controller_info.p_gain |= (raw_packet[3 + index as usize] as u32).shl(8);
                 f.controller_info.p_gain |= (raw_packet[4 + index as usize] as u32).shl(16);
@@ -341,7 +340,6 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_CONTROLLER_INFO + 2;
             }
             _ => {
-                f.available_content = 0;
             }
         }
     }

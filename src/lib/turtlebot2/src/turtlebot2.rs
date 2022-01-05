@@ -71,8 +71,6 @@ pub const FDB_SIZE_CONTROLLER_INFO: u8 = 13;
 #[derivative(Default)]
 pub struct Feedback {
     #[derivative(Default(value = "0"))]
-    pub available_content: i32,
-    #[derivative(Default(value = "0"))]
     pub epoch_time_stamp: u128,
     pub basic_sensor: BasicSensor,
     pub docking_ir: DockingIR,
@@ -90,6 +88,7 @@ pub struct Feedback {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct BasicSensor {
+    pub valid: bool,
     pub time_stamp: u16,
     pub bumper: u8,
     pub wheel_drop: u8,
@@ -107,6 +106,7 @@ pub struct BasicSensor {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct DockingIR {
+    pub valid: bool,
     pub right_signal: u8,
     pub central_signal: u8,
     pub left_signal: u8,
@@ -114,12 +114,14 @@ pub struct DockingIR {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct InertialSensor {
+    pub valid: bool,
     pub angle: u16,
     pub angle_rate: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct Cliff {
+    pub valid: bool,
     pub right_cliff_sensor: u16,
     pub central_cliff_sensor: u16,
     pub left_cliff_sensor: u16,
@@ -127,12 +129,14 @@ pub struct Cliff {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct Current {
+    pub valid: bool,
     pub left_motor: u8,
     pub right_motor: u8,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct HardwareVersion {
+    pub valid: bool,
     pub patch: u8,
     pub minor: u8,
     pub major: u8,
@@ -140,6 +144,7 @@ pub struct HardwareVersion {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct FirmwareVersion {
+    pub valid: bool,
     pub patch: u8,
     pub minor: u8,
     pub major: u8,
@@ -147,6 +152,7 @@ pub struct FirmwareVersion {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct Gyro {
+    pub valid: bool,
     pub frame_id: u8,
     pub followed_data_length: u8,
     pub raw_gyro_data: [RawGyro; 3],
@@ -154,6 +160,7 @@ pub struct Gyro {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct RawGyro {
+    pub valid: bool,
     pub x: u16,
     pub y: u16,
     pub z: u16,
@@ -161,6 +168,7 @@ pub struct RawGyro {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct GeneralPurposeInput {
+    pub valid: bool,
     pub d_ch0: u16,
     pub a_ch0: u16,
     pub a_ch1: u16,
@@ -170,6 +178,7 @@ pub struct GeneralPurposeInput {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct UniqueDeviceId {
+    pub valid: bool,
     pub udid0: u32,
     pub udid1: u32,
     pub udid2: u32,
@@ -177,6 +186,7 @@ pub struct UniqueDeviceId {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct ControllerInfo {
+    pub valid: bool,
     pub is_user_configured: u8,
     pub p_gain: u32,
     pub i_gain: u32,
@@ -186,7 +196,6 @@ pub struct ControllerInfo {
 impl Feedback {
     pub fn new() -> Feedback {
         Feedback {
-            available_content: 0,
             epoch_time_stamp: 0,
             basic_sensor: BasicSensor::default(),
             docking_ir: DockingIR::default(),
