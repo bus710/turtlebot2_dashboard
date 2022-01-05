@@ -46,7 +46,7 @@ pub enum FeedbackId {
     FirmwareVersion = 11,
     RawDataOf3AxisGyro = 13,
     GeneralPurposeInput = 16,
-    UniqueDeviceIdentifier = 19,
+    UniqueDeviceId = 19,
     ControllerInfo = 21,
 }
 
@@ -54,7 +54,7 @@ pub enum FeedbackId {
 // Gyro sensor size can be 14 or 20 bytes
 pub const FDB_SIZE_BASIC_SENSOR_DATA: u8 = 15;
 pub const FDB_SIZE_DOCKING_IR: u8 = 3;
-pub const FDB_SIZE_ITERTIAL_SENSOR: u8 = 7;
+pub const FDB_SIZE_INERTIAL_SENSOR: u8 = 7;
 pub const FDB_SIZE_CLIFF: u8 = 6;
 pub const FDB_SIZE_CURRENT: u8 = 2;
 pub const FDB_SIZE_HARDWARE_VERSION: u8 = 4;
@@ -83,7 +83,7 @@ pub struct Feedback {
     pub firmware_version: FirmwareVersion,
     pub gyro: Gyro,
     pub general_purpose_input: GeneralPurposeInput,
-    pub unique_device_identifier: UniqueDeviceIdentifier,
+    pub unique_device_id: UniqueDeviceId,
     pub controller_info: ControllerInfo,
 }
 
@@ -115,7 +115,7 @@ pub struct DockingIR {
 #[derivative(Default)]
 pub struct InertialSensor {
     pub angle: u16,
-    pub andle_rate: u16,
+    pub angle_rate: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
@@ -149,7 +149,7 @@ pub struct FirmwareVersion {
 pub struct Gyro {
     pub frame_id: u8,
     pub followed_data_length: u8,
-    pub raw_gyro_data_array: [RawGyro; 3],
+    pub raw_gyro_data: [RawGyro; 3],
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
@@ -161,15 +161,15 @@ pub struct RawGyro {
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
 pub struct GeneralPurposeInput {
-    pub digital_input: u16,
-    pub analog_input_ch0: u16,
-    pub analog_input_ch1: u16,
-    pub analog_input_ch2: u16,
-    pub analog_input_ch3: u16,
+    pub d_ch0: u16,
+    pub a_ch0: u16,
+    pub a_ch1: u16,
+    pub a_ch2: u16,
+    pub a_ch3: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-pub struct UniqueDeviceIdentifier {
+pub struct UniqueDeviceId {
     pub udid0: u32,
     pub udid1: u32,
     pub udid2: u32,
@@ -197,7 +197,7 @@ impl Feedback {
             firmware_version: FirmwareVersion::default(),
             gyro: Gyro::default(),
             general_purpose_input: GeneralPurposeInput::default(),
-            unique_device_identifier: UniqueDeviceIdentifier::default(),
+            unique_device_id: UniqueDeviceId::default(),
             controller_info: ControllerInfo::default(),
         }
     }

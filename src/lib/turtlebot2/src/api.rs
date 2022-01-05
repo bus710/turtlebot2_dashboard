@@ -67,6 +67,8 @@ pub fn open_port(port_name: String) {
                 let correct_crc = check_crc(&tmp);
                 eprintln!("residue & broken (crc: {:?}) - {:?}", correct_crc, tmp);
                 eprintln!();
+                let f = format_feedback(&broken_packet.to_vec()).expect("Wrong format");
+                eprintln!("feedback - {:?}", f);
             }
         }
 
@@ -90,8 +92,8 @@ pub fn open_port(port_name: String) {
                 }
                 residue = raw_packet.clone(); // pass to the next iteration
             } else {
-                //
-                format_feedback(raw_packet);
+                let f = format_feedback(raw_packet);
+                eprintln!("feedback - {:?}", f);
                 residue = Vec::new(); // clear so don't pass to the next iteration
             }
         }
@@ -169,7 +171,7 @@ fn get_epoch_ms() -> u128 {
         .as_millis()
 }
 
-pub fn format_feedback(raw_packet: &Vec<u8>) {
+pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
     let total_len = raw_packet[2].clone();
     let mut exit_count = 0;
     let mut index: u8 = 3; // assign the index of first ID of a feedback
@@ -187,16 +189,17 @@ pub fn format_feedback(raw_packet: &Vec<u8>) {
         let id = num::FromPrimitive::from_u8(raw_packet[index as usize]);
         match id {
             Some(FeedbackId::BasicSensor) => {
-                f.available_content = (1 << turtlebot2::FeedbackId::BasicSensor as i32);
+                eprintln!(">>>>>");
+                f.available_content |= (1 << turtlebot2::FeedbackId::BasicSensor as u32);
                 f.basic_sensor.time_stamp = raw_packet[2 + index as usize] as u16;
-                f.basic_sensor.time_stamp |= raw_packet[3 + index as usize].shl(8) as u16;
+                f.basic_sensor.time_stamp |= (raw_packet[3 + index as usize] as u16).shl(8);
                 f.basic_sensor.bumper = raw_packet[4 + index as usize];
                 f.basic_sensor.wheel_drop = raw_packet[5 + index as usize];
                 f.basic_sensor.cliff = raw_packet[6 + index as usize];
                 f.basic_sensor.left_encoder = raw_packet[7 + index as usize] as u16;
-                f.basic_sensor.left_encoder |= raw_packet[8 + index as usize].shl(8) as u16;
+                f.basic_sensor.left_encoder |= (raw_packet[8 + index as usize] as u16).shl(8);
                 f.basic_sensor.right_encoder = raw_packet[9 + index as usize] as u16;
-                f.basic_sensor.right_encoder |= raw_packet[10 + index as usize].shl(8) as u16;
+                f.basic_sensor.right_encoder |= (raw_packet[10 + index as usize] as u16).shl(8);
                 f.basic_sensor.left_pwm = raw_packet[11 + index as usize];
                 f.basic_sensor.right_pwm = raw_packet[12 + index as usize];
                 f.basic_sensor.button = raw_packet[13 + index as usize];
@@ -205,16 +208,142 @@ pub fn format_feedback(raw_packet: &Vec<u8>) {
                 f.basic_sensor.overcurrent_flags = raw_packet[16 + index as usize];
                 index += turtlebot2::FDB_SIZE_BASIC_SENSOR_DATA + 2;
             }
-            Some(FeedbackId::DockingIR) => {}
-            Some(FeedbackId::InertialSensor) => {}
-            Some(FeedbackId::Cliff) => {}
-            Some(FeedbackId::HardwareVersion) => {}
-            Some(FeedbackId::FirmwareVersion) => {}
-            Some(FeedbackId::RawDataOf3AxisGyro) => {}
-            Some(FeedbackId::GeneralPurposeInput) => {}
-            Some(FeedbackId::UniqueDeviceIdentifier) => {}
-            Some(FeedbackId::ControllerInfo) => {}
-            _ => {}
+            Some(FeedbackId::DockingIR) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::DockingIR as u32);
+                f.docking_ir.right_signal = raw_packet[2 + index as usize];
+                f.docking_ir.central_signal = raw_packet[3 + index as usize];
+                f.docking_ir.left_signal = raw_packet[4 + index as usize];
+                index += turtlebot2::FDB_SIZE_DOCKING_IR + 2;
+            }
+            Some(FeedbackId::InertialSensor) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::InertialSensor as u32);
+                f.inertial_sensor.angle = raw_packet[2 + index as usize] as u16;
+                f.inertial_sensor.angle |= (raw_packet[3 + index as usize] as u16).shl(8);
+                f.inertial_sensor.angle_rate = raw_packet[4 + index as usize] as u16;
+                f.inertial_sensor.angle_rate |= (raw_packet[5 + index as usize] as u16).shl(8);
+                index += turtlebot2::FDB_SIZE_INERTIAL_SENSOR + 2;
+            }
+            Some(FeedbackId::Cliff) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::Cliff as u32);
+                f.cliff.right_cliff_sensor = raw_packet[2 + index as usize] as u16;
+                f.cliff.right_cliff_sensor |= (raw_packet[3 + index as usize] as u16).shl(8);
+                f.cliff.central_cliff_sensor = raw_packet[4 + index as usize] as u16;
+                f.cliff.central_cliff_sensor |= (raw_packet[5 + index as usize] as u16).shl(8);
+                f.cliff.left_cliff_sensor = raw_packet[6 + index as usize] as u16;
+                f.cliff.left_cliff_sensor |= (raw_packet[7 + index as usize] as u16).shl(8);
+                index += turtlebot2::FDB_SIZE_CLIFF + 2;
+            }
+            Some(FeedbackId::Current) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::Current as u32);
+                f.current.left_motor = raw_packet[2 + index as usize];
+                f.current.right_motor = raw_packet[3 + index as usize];
+                index += turtlebot2::FDB_SIZE_CURRENT + 2;
+            }
+            Some(FeedbackId::HardwareVersion) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::HardwareVersion as u32);
+                f.hardware_version.patch = raw_packet[2 + index as usize];
+                f.hardware_version.minor = raw_packet[3 + index as usize];
+                f.hardware_version.major = raw_packet[4 + index as usize];
+                index += turtlebot2::FDB_SIZE_HARDWARE_VERSION + 2;
+            }
+            Some(FeedbackId::FirmwareVersion) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::FirmwareVersion as u32);
+                f.firmware_version.patch = raw_packet[2 + index as usize];
+                f.firmware_version.minor = raw_packet[3 + index as usize];
+                f.firmware_version.major = raw_packet[4 + index as usize];
+                index += turtlebot2::FDB_SIZE_FIRMWARE_VERSION + 2;
+            }
+            Some(FeedbackId::RawDataOf3AxisGyro) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::RawDataOf3AxisGyro as u32);
+                f.gyro.frame_id = raw_packet[2 + index as usize];
+                f.gyro.followed_data_length = raw_packet[3 + index as usize];
+                //
+                f.gyro.raw_gyro_data[0].x = raw_packet[4 + index as usize] as u16;
+                f.gyro.raw_gyro_data[0].x |= (raw_packet[5 + index as usize] as u16).shl(8);
+                f.gyro.raw_gyro_data[0].y = raw_packet[6 + index as usize] as u16;
+                f.gyro.raw_gyro_data[0].y |= (raw_packet[7 + index as usize] as u16).shl(8);
+                f.gyro.raw_gyro_data[0].z = raw_packet[8 + index as usize] as u16;
+                f.gyro.raw_gyro_data[0].z |= (raw_packet[9 + index as usize] as u16).shl(8);
+                //
+                f.gyro.raw_gyro_data[1].x = raw_packet[10 + index as usize] as u16;
+                f.gyro.raw_gyro_data[1].x |= (raw_packet[11 + index as usize] as u16).shl(8);
+                f.gyro.raw_gyro_data[1].y = raw_packet[12 + index as usize] as u16;
+                f.gyro.raw_gyro_data[1].y |= (raw_packet[13 + index as usize] as u16).shl(8);
+                f.gyro.raw_gyro_data[1].z = raw_packet[14 + index as usize] as u16;
+                f.gyro.raw_gyro_data[1].z |= (raw_packet[15 + index as usize] as u16).shl(8);
+                //
+                if raw_packet[1 + index as usize] == turtlebot2::FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A {
+                    index += turtlebot2::FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A + 2;
+                } else if raw_packet[1 + index as usize]
+                    == turtlebot2::FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B
+                {
+                    f.gyro.raw_gyro_data[2].x = raw_packet[16 + index as usize] as u16;
+                    f.gyro.raw_gyro_data[2].x |= (raw_packet[17 + index as usize] as u16).shl(8);
+                    f.gyro.raw_gyro_data[2].y = raw_packet[18 + index as usize] as u16;
+                    f.gyro.raw_gyro_data[2].y |= (raw_packet[19 + index as usize] as u16).shl(8);
+                    f.gyro.raw_gyro_data[2].z = raw_packet[20 + index as usize] as u16;
+                    f.gyro.raw_gyro_data[2].z |= (raw_packet[21 + index as usize] as u16).shl(8);
+                    index += turtlebot2::FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B + 2;
+                }
+            }
+            Some(FeedbackId::GeneralPurposeInput) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::GeneralPurposeInput as u32);
+                f.general_purpose_input.d_ch0 = raw_packet[2 + index as usize] as u16;
+                f.general_purpose_input.d_ch0 |= (raw_packet[3 + index as usize] as u16).shl(8);
+                //
+                f.general_purpose_input.a_ch0 = raw_packet[4 + index as usize] as u16;
+                f.general_purpose_input.a_ch0 |= (raw_packet[5 + index as usize] as u16).shl(8);
+                //
+                f.general_purpose_input.a_ch1 = raw_packet[6 + index as usize] as u16;
+                f.general_purpose_input.a_ch1 |= (raw_packet[7 + index as usize] as u16).shl(8);
+                //
+                f.general_purpose_input.a_ch2 = raw_packet[8 + index as usize] as u16;
+                f.general_purpose_input.a_ch2 |= (raw_packet[9 + index as usize] as u16).shl(8);
+                //
+                f.general_purpose_input.a_ch3 = raw_packet[10 + index as usize] as u16;
+                f.general_purpose_input.a_ch3 |= (raw_packet[11 + index as usize] as u16).shl(8);
+                index += turtlebot2::FDB_SIZE_GENERAL_PURPOSE_OUTPUT + 2;
+            }
+            Some(FeedbackId::UniqueDeviceId) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::UniqueDeviceId as u32);
+                f.unique_device_id.udid0 = raw_packet[2 + index as usize] as u32;
+                f.unique_device_id.udid0 |= (raw_packet[3 + index as usize] as u32).shl(8);
+                f.unique_device_id.udid0 |= (raw_packet[4 + index as usize] as u32).shl(16);
+                f.unique_device_id.udid0 |= (raw_packet[5 + index as usize] as u32).shl(24);
+                //
+                f.unique_device_id.udid1 = raw_packet[6 + index as usize] as u32;
+                f.unique_device_id.udid1 |= (raw_packet[7 + index as usize] as u32).shl(8);
+                f.unique_device_id.udid1 |= (raw_packet[8 + index as usize] as u32).shl(16);
+                f.unique_device_id.udid1 |= (raw_packet[9 + index as usize] as u32).shl(24);
+                //
+                f.unique_device_id.udid2 = raw_packet[10 + index as usize] as u32;
+                f.unique_device_id.udid2 |= (raw_packet[11 + index as usize] as u32).shl(8);
+                f.unique_device_id.udid2 |= (raw_packet[12 + index as usize] as u32).shl(16);
+                f.unique_device_id.udid2 |= (raw_packet[13 + index as usize] as u32).shl(24);
+                index += turtlebot2::FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER + 2;
+            }
+            Some(FeedbackId::ControllerInfo) => {
+                f.available_content |= (1 << turtlebot2::FeedbackId::ControllerInfo as u32);
+                f.controller_info.p_gain = raw_packet[2 + index as usize] as u32;
+                f.controller_info.p_gain |= (raw_packet[3 + index as usize] as u32).shl(8);
+                f.controller_info.p_gain |= (raw_packet[4 + index as usize] as u32).shl(16);
+                f.controller_info.p_gain |= (raw_packet[5 + index as usize] as u32).shl(24);
+                //
+                f.controller_info.i_gain = raw_packet[6 + index as usize] as u32;
+                f.controller_info.i_gain |= (raw_packet[7 + index as usize] as u32).shl(8);
+                f.controller_info.i_gain |= (raw_packet[8 + index as usize] as u32).shl(16);
+                f.controller_info.i_gain |= (raw_packet[9 + index as usize] as u32).shl(24);
+                //
+                f.controller_info.d_gain = raw_packet[10 + index as usize] as u32;
+                f.controller_info.d_gain |= (raw_packet[11 + index as usize] as u32).shl(8);
+                f.controller_info.d_gain |= (raw_packet[12 + index as usize] as u32).shl(16);
+                f.controller_info.d_gain |= (raw_packet[13 + index as usize] as u32).shl(24);
+                index += turtlebot2::FDB_SIZE_CONTROLLER_INFO + 2;
+            }
+            _ => {
+                f.available_content = 0;
+            }
         }
     }
+    Ok(f)
 }
