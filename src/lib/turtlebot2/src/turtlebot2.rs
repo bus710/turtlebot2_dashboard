@@ -35,7 +35,7 @@ pub const CMD_SIZE_GET_CONTROLLER_GAIN: u8 = 1;
 
 // ====================================
 
-#[derive(FromPrimitive, ToPrimitive)]
+#[derive(Debug, FromPrimitive, ToPrimitive)]
 pub enum FeedbackId {
     BasicSensor = 1,
     DockingIR = 3,

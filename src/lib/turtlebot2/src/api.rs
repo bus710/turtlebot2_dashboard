@@ -63,13 +63,19 @@ pub fn open_port(port_name: String) {
             // eprintln!("broken packet - {:?}", &buffer[..headers[0]]);
             let broken_packet = &packet[..headers[0]];
             if residue.len() != 0 {
-                let tmp = merge_residue(&residue, broken_packet).expect("");
-                let correct_crc = check_crc(&tmp);
-                eprintln!("residue & broken (crc: {:?}) - {:?}", correct_crc, tmp);
+                let merged_packet = merge_residue(&residue, broken_packet).expect("");
+                let correct_crc = check_crc(&merged_packet);
+                eprintln!(
+                    "residue & broken (crc: {:?}) - {:?}",
+                    correct_crc, merged_packet
+                );
                 eprintln!();
-                let f = format_feedback(&broken_packet.to_vec()).expect("Wrong format");
-                eprintln!("feedback - {:?}", f);
+                if correct_crc {
+                    let f = format_feedback(&merged_packet);
+                    eprintln!("feedback - {:?}", f);
+                }
             }
+            eprintln!();
         }
 
         // divide packets by header found
@@ -96,6 +102,7 @@ pub fn open_port(port_name: String) {
                 eprintln!("feedback - {:?}", f);
                 residue = Vec::new(); // clear so don't pass to the next iteration
             }
+            eprintln!();
         }
         eprintln!();
 
@@ -179,14 +186,30 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
 
     f.epoch_time_stamp = get_epoch_ms();
 
-    // eprintln!("f - {:?}", f);
 
     loop {
+        // eprintln!("bbb - {:?}", "bbb");
+        // eprintln!("index - {:?}", index);
+        // eprintln!("total_len - {:?}", total_len);
+        // eprintln!("exit_count - {:?}", exit_count);
+        // if total_len == 0 {
+        //     eprintln!("raw_packet - {:?}", raw_packet)
+        // }
+
         exit_count += 1;
         if index >= total_len || exit_count > 20 {
             break;
         }
-        let id = num::FromPrimitive::from_u8(raw_packet[index as usize]);
+        let payload_index = raw_packet[index as usize];
+        let id = num::FromPrimitive::from_u8(payload_index);
+
+        // eprintln!("id - {:?}", id);
+        // eprintln!("index - {:?}", index);
+        // eprintln!("payload_index - {:?}", payload_index);
+        // if payload_index == 0 {
+        //     eprintln!("raw_packet - {:?}", raw_packet)
+        // }
+
         match id {
             Some(FeedbackId::BasicSensor) => {
                 f.basic_sensor.valid = true;
@@ -340,6 +363,7 @@ pub fn format_feedback(raw_packet: &Vec<u8>) -> Result<Feedback> {
                 index += turtlebot2::FDB_SIZE_CONTROLLER_INFO + 2;
             }
             _ => {
+                //
             }
         }
     }
