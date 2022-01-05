@@ -49,7 +49,7 @@ enum FeedbackId {
 }
 
 // These can be used to get the size of payload
-// Gyro sensor size can be 14 or 20 bytes 
+// Gyro sensor size can be 14 or 20 bytes
 const FDB_SIZE_BASIC_SENSOR_DATA: i32 = 15;
 const FDB_SIZE_DOCKING_IR: i32 = 3;
 const FDB_SIZE_ITERTIAL_SENSOR: i32 = 7;
@@ -64,6 +64,95 @@ const FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER: i32 = 12;
 const FDB_SIZE_CONTROLLER_INFO: i32 = 13;
 
 // ====================================
+
+struct Feedback {
+    available_content: i32,
+    time_stamp: u128,
+    basic_sensor: BasicSensor,
+    docking_ir: DockingIR,
+    inertial_sensor: InertialSensor,
+    cliff: Cliff,
+    current: Current,
+    hardware_version: HardwareVersion,
+    firmware_version: FirmwareVersion,
+    gyro: Gyro,
+    general_purpose_input: GeneralPurposeInput,
+    unique_device_identifier: UniqueDeviceIdentifier,
+    controller_info: ControllerInfo,
+}
+
+struct BasicSensor {
+    time_stamp: u16,
+    bumper: u8,
+    wheel_drop: u8,
+    cliff: u8,
+    left_encoder: u16,
+    right_encoder: u16,
+    left_pwm: u8,
+    right_pwm: u8,
+    button: u8,
+    charger: u8,
+    battery: u8,
+    overcurrent_flags: u8,
+}
+struct DockingIR {
+    right_signal: u8,
+    central_signal: u8,
+    left_signal: u8,
+}
+struct InertialSensor {
+    angle: u16,
+    andle_rate: u16,
+}
+struct Cliff {
+    right_cliff_sensor: u16,
+    central_cliff_sensor: u16,
+    left_cliff_sensor: u16,
+}
+struct Current {
+    left_motor: u8,
+    right_motor: u8,
+}
+struct HardwareVersion {
+    patch: u8,
+    minor: u8,
+    major: u8,
+}
+struct FirmwareVersion {
+    patch: u8,
+    minor: u8,
+    major: u8,
+}
+struct Gyro {
+    frame_id: u8,
+    followed_data_length: u8,
+    raw_gyro_data_array: [RawGyro; 3],
+}
+
+struct RawGyro {
+    x: u16,
+    y: u16,
+    z: u16,
+}
+
+struct GeneralPurposeInput {
+    digiral_input: u16,
+    analog_input_ch0: u16,
+    analog_input_ch1: u16,
+    analog_input_ch2: u16,
+    analog_input_ch3: u16,
+}
+struct UniqueDeviceIdentifier {
+    udid0: u32,
+    udid1: u32,
+    udid2: u32,
+}
+struct ControllerInfo {
+    is_user_configured: u8,
+    p_gain: u32,
+    i_gain: u32,
+    d_gain: u32,
+}
 
 pub fn hello() {
     eprintln!("{:?}", "parse");

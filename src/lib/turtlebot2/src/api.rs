@@ -70,14 +70,14 @@ pub fn open_port(port_name: String) {
 
         // divide packets by header found
         let raw_packets = divide_packet(&packet[..len], &headers).expect("Packets not found");
-        for (i, rp) in raw_packets.iter().enumerate() {
+        for (i, raw_packet) in raw_packets.iter().enumerate() {
             // check CRC and set the residue to pass to next iteration.
-            let correct_crc = check_crc(&rp.clone());
+            let correct_crc = check_crc(&raw_packet.clone());
             eprintln!(
                 "raw packet (index: {:?}, crc: {:?}) - {:?}",
                 i,
                 correct_crc,
-                rp.as_slice()
+                raw_packet.as_slice()
             );
 
             if !correct_crc {
@@ -86,7 +86,7 @@ pub fn open_port(port_name: String) {
                 } else {
                     eprintln!("CRC not matched - pass to the next");
                 }
-                residue = rp.clone(); // pass to the next iteration
+                residue = raw_packet.clone(); // pass to the next iteration
             } else {
                 //
                 residue = Vec::new(); // clear so don't pass to the next iteration
@@ -157,4 +157,13 @@ pub fn check_crc(packet: &Vec<u8>) -> bool {
     acc == checksum
 }
 
-pub fn format_feedback() {}
+pub fn format_feedback(raw_packet: &Vec<u8>) {}
+
+use std::time::{SystemTime, UNIX_EPOCH};
+
+fn get_epoch_ms() -> u128 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis()
+}
