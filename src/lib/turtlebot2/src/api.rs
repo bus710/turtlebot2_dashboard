@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+use std::ops::Shl;
 use std::os::raw;
 use std::slice::Iter;
 use std::sync::atomic::{AtomicI32, Ordering};
@@ -170,8 +171,50 @@ fn get_epoch_ms() -> u128 {
 
 pub fn format_feedback(raw_packet: &Vec<u8>) {
     let total_len = raw_packet[2].clone();
-    let index = 3;
+    let mut exit_count = 0;
+    let mut index: u8 = 3; // assign the index of first ID of a feedback
+    let mut f = turtlebot2::Feedback::new();
 
-    let f = turtlebot2::Feedback::new();
-    eprintln!("f - {:?}", f);
+    f.epoch_time_stamp = get_epoch_ms();
+
+    // eprintln!("f - {:?}", f);
+
+    loop {
+        exit_count += 1;
+        if index >= total_len || exit_count > 20 {
+            break;
+        }
+        let id = num::FromPrimitive::from_u8(raw_packet[index as usize]);
+        match id {
+            Some(FeedbackId::BasicSensor) => {
+                f.available_content = (1 << turtlebot2::FeedbackId::BasicSensor as i32);
+                f.basic_sensor.time_stamp = raw_packet[2 + index as usize] as u16;
+                f.basic_sensor.time_stamp |= raw_packet[3 + index as usize].shl(8) as u16;
+                f.basic_sensor.bumper = raw_packet[4 + index as usize];
+                f.basic_sensor.wheel_drop = raw_packet[5 + index as usize];
+                f.basic_sensor.cliff = raw_packet[6 + index as usize];
+                f.basic_sensor.left_encoder = raw_packet[7 + index as usize] as u16;
+                f.basic_sensor.left_encoder |= raw_packet[8 + index as usize].shl(8) as u16;
+                f.basic_sensor.right_encoder = raw_packet[9 + index as usize] as u16;
+                f.basic_sensor.right_encoder |= raw_packet[10 + index as usize].shl(8) as u16;
+                f.basic_sensor.left_pwm = raw_packet[11 + index as usize];
+                f.basic_sensor.right_pwm = raw_packet[12 + index as usize];
+                f.basic_sensor.button = raw_packet[13 + index as usize];
+                f.basic_sensor.charger = raw_packet[14 + index as usize];
+                f.basic_sensor.battery = raw_packet[15 + index as usize];
+                f.basic_sensor.overcurrent_flags = raw_packet[16 + index as usize];
+                index += turtlebot2::FDB_SIZE_BASIC_SENSOR_DATA + 2;
+            }
+            Some(FeedbackId::DockingIR) => {}
+            Some(FeedbackId::InertialSensor) => {}
+            Some(FeedbackId::Cliff) => {}
+            Some(FeedbackId::HardwareVersion) => {}
+            Some(FeedbackId::FirmwareVersion) => {}
+            Some(FeedbackId::RawDataOf3AxisGyro) => {}
+            Some(FeedbackId::GeneralPurposeInput) => {}
+            Some(FeedbackId::UniqueDeviceIdentifier) => {}
+            Some(FeedbackId::ControllerInfo) => {}
+            _ => {}
+        }
+    }
 }

@@ -1,12 +1,10 @@
 #![allow(unused)]
-#![allow(non_snake_case)]
-#![allow(non_camel_case_types)]
 
 use derivative::*;
 
 // ====================================
 
-enum CommandId {
+pub enum CommandId {
     BaseControl = 1,
     Sound = 3,
     SoundSequence = 4,
@@ -18,28 +16,28 @@ enum CommandId {
 
 // These can be used to set the length of command
 // Total length = ID + Size + Payload + CRC
-const CMD_LEN_BASE_CONTROL: i32 = 7;
-const CMD_LEN_SOUND: i32 = 6;
-const CMD_LEN_SOUND_SEQUENCE: i32 = 4;
-const CMD_LEN_REQUEST_EXTRA: i32 = 5;
-const CMD_LEN_GENERAL_PURPOSE_OUTPUT: i32 = 5;
-const CMD_LEN_SET_CONTROLLER_GAIN: i32 = 16;
-const CMD_LEN_GET_CONTROLLER_GAIN: i32 = 4;
+pub const CMD_LEN_BASE_CONTROL: u8 = 7;
+pub const CMD_LEN_SOUND: u8 = 6;
+pub const CMD_LEN_SOUND_SEQUENCE: u8 = 4;
+pub const CMD_LEN_REQUEST_EXTRA: u8 = 5;
+pub const CMD_LEN_GENERAL_PURPOSE_OUTPUT: u8 = 5;
+pub const CMD_LEN_SET_CONTROLLER_GAIN: u8 = 16;
+pub const CMD_LEN_GET_CONTROLLER_GAIN: u8 = 4;
 
 // These can be used to set the size of payload
-const CMD_SIZE_BASE_CONTROL: i32 = 4;
-const CMD_SIZE_SOUND: i32 = 3;
-const CMD_SIZE_SOUND_SEQUENCE: i32 = 1;
-const CMD_SIZE_REQUEST_EXTRA: i32 = 2;
-const CMD_SIZE_GENERAL_PURPOSE_OUTPUT: i32 = 2;
-const CMD_SIZE_SET_CONTROLLER_GAIN: i32 = 13;
-const CMD_SIZE_GET_CONTROLLER_GAIN: i32 = 1;
+pub const CMD_SIZE_BASE_CONTROL: u8 = 4;
+pub const CMD_SIZE_SOUND: u8 = 3;
+pub const CMD_SIZE_SOUND_SEQUENCE: u8 = 1;
+pub const CMD_SIZE_REQUEST_EXTRA: u8 = 2;
+pub const CMD_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 2;
+pub const CMD_SIZE_SET_CONTROLLER_GAIN: u8 = 13;
+pub const CMD_SIZE_GET_CONTROLLER_GAIN: u8 = 1;
 
 // ====================================
 
-enum FeedbackId {
-    TimeStamp = 0,
-    BasicSensorData = 1,
+#[derive(FromPrimitive, ToPrimitive)]
+pub enum FeedbackId {
+    BasicSensor = 1,
     DockingIR = 3,
     InertialSensor = 4,
     Cliff = 5,
@@ -54,18 +52,18 @@ enum FeedbackId {
 
 // These can be used to get the size of payload
 // Gyro sensor size can be 14 or 20 bytes
-const FDB_SIZE_BASIC_SENSOR_DATA: i32 = 15;
-const FDB_SIZE_DOCKING_IR: i32 = 3;
-const FDB_SIZE_ITERTIAL_SENSOR: i32 = 7;
-const FDB_SIZE_CLIFF: i32 = 6;
-const FDB_SIZE_CURRENT: i32 = 2;
-const FDB_SIZE_HARDWARE_VERSION: i32 = 4;
-const FDB_SIZE_FIRMWARE_VERSION: i32 = 4;
-const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A: i32 = 14;
-const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B: i32 = 20;
-const FDB_SIZE_GENERAL_PURPOSE_OUTPUT: i32 = 16;
-const FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER: i32 = 12;
-const FDB_SIZE_CONTROLLER_INFO: i32 = 13;
+pub const FDB_SIZE_BASIC_SENSOR_DATA: u8 = 15;
+pub const FDB_SIZE_DOCKING_IR: u8 = 3;
+pub const FDB_SIZE_ITERTIAL_SENSOR: u8 = 7;
+pub const FDB_SIZE_CLIFF: u8 = 6;
+pub const FDB_SIZE_CURRENT: u8 = 2;
+pub const FDB_SIZE_HARDWARE_VERSION: u8 = 4;
+pub const FDB_SIZE_FIRMWARE_VERSION: u8 = 4;
+pub const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A: u8 = 14;
+pub const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B: u8 = 20;
+pub const FDB_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 16;
+pub const FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER: u8 = 12;
+pub const FDB_SIZE_CONTROLLER_INFO: u8 = 13;
 
 // ====================================
 
@@ -73,125 +71,123 @@ const FDB_SIZE_CONTROLLER_INFO: i32 = 13;
 #[derivative(Default)]
 pub struct Feedback {
     #[derivative(Default(value = "0"))]
-    available_content: i32,
+    pub available_content: i32,
     #[derivative(Default(value = "0"))]
-    time_stamp: u128,
-    basic_sensor: BasicSensor,
-    docking_ir: DockingIR,
-    inertial_sensor: InertialSensor,
-    cliff: Cliff,
-    current: Current,
-    hardware_version: HardwareVersion,
-    firmware_version: FirmwareVersion,
-    gyro: Gyro,
-    general_purpose_input: GeneralPurposeInput,
-    unique_device_identifier: UniqueDeviceIdentifier,
-    controller_info: ControllerInfo,
+    pub epoch_time_stamp: u128,
+    pub basic_sensor: BasicSensor,
+    pub docking_ir: DockingIR,
+    pub inertial_sensor: InertialSensor,
+    pub cliff: Cliff,
+    pub current: Current,
+    pub hardware_version: HardwareVersion,
+    pub firmware_version: FirmwareVersion,
+    pub gyro: Gyro,
+    pub general_purpose_input: GeneralPurposeInput,
+    pub unique_device_identifier: UniqueDeviceIdentifier,
+    pub controller_info: ControllerInfo,
 }
 
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct BasicSensor {
-    time_stamp: u16,
-    bumper: u8,
-    wheel_drop: u8,
-    cliff: u8,
-    left_encoder: u16,
-    right_encoder: u16,
-    left_pwm: u8,
-    right_pwm: u8,
-    button: u8,
-    charger: u8,
-    battery: u8,
-    overcurrent_flags: u8,
+pub struct BasicSensor {
+    pub time_stamp: u16,
+    pub bumper: u8,
+    pub wheel_drop: u8,
+    pub cliff: u8,
+    pub left_encoder: u16,
+    pub right_encoder: u16,
+    pub left_pwm: u8,
+    pub right_pwm: u8,
+    pub button: u8,
+    pub charger: u8,
+    pub battery: u8,
+    pub overcurrent_flags: u8,
 }
 
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct DockingIR {
-    right_signal: u8,
-    central_signal: u8,
-    left_signal: u8,
+pub struct DockingIR {
+    pub right_signal: u8,
+    pub central_signal: u8,
+    pub left_signal: u8,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct InertialSensor {
-    angle: u16,
-    andle_rate: u16,
+pub struct InertialSensor {
+    pub angle: u16,
+    pub andle_rate: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct Cliff {
-    right_cliff_sensor: u16,
-    central_cliff_sensor: u16,
-    left_cliff_sensor: u16,
+pub struct Cliff {
+    pub right_cliff_sensor: u16,
+    pub central_cliff_sensor: u16,
+    pub left_cliff_sensor: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct Current {
-    left_motor: u8,
-    right_motor: u8,
+pub struct Current {
+    pub left_motor: u8,
+    pub right_motor: u8,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct HardwareVersion {
-    patch: u8,
-    minor: u8,
-    major: u8,
+pub struct HardwareVersion {
+    pub patch: u8,
+    pub minor: u8,
+    pub major: u8,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct FirmwareVersion {
-    patch: u8,
-    minor: u8,
-    major: u8,
+pub struct FirmwareVersion {
+    pub patch: u8,
+    pub minor: u8,
+    pub major: u8,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct Gyro {
-    frame_id: u8,
-    followed_data_length: u8,
-    raw_gyro_data_array: [RawGyro; 3],
+pub struct Gyro {
+    pub frame_id: u8,
+    pub followed_data_length: u8,
+    pub raw_gyro_data_array: [RawGyro; 3],
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-
-struct RawGyro {
-    x: u16,
-    y: u16,
-    z: u16,
+pub struct RawGyro {
+    pub x: u16,
+    pub y: u16,
+    pub z: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-
-struct GeneralPurposeInput {
-    digiral_input: u16,
-    analog_input_ch0: u16,
-    analog_input_ch1: u16,
-    analog_input_ch2: u16,
-    analog_input_ch3: u16,
+pub struct GeneralPurposeInput {
+    pub digital_input: u16,
+    pub analog_input_ch0: u16,
+    pub analog_input_ch1: u16,
+    pub analog_input_ch2: u16,
+    pub analog_input_ch3: u16,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct UniqueDeviceIdentifier {
-    udid0: u32,
-    udid1: u32,
-    udid2: u32,
+pub struct UniqueDeviceIdentifier {
+    pub udid0: u32,
+    pub udid1: u32,
+    pub udid2: u32,
 }
 #[derive(Debug, Derivative)]
 #[derivative(Default)]
-struct ControllerInfo {
-    is_user_configured: u8,
-    p_gain: u32,
-    i_gain: u32,
-    d_gain: u32,
+pub struct ControllerInfo {
+    pub is_user_configured: u8,
+    pub p_gain: u32,
+    pub i_gain: u32,
+    pub d_gain: u32,
 }
 
 impl Feedback {
     pub fn new() -> Feedback {
         Feedback {
             available_content: 0,
-            time_stamp: 0,
+            epoch_time_stamp: 0,
             basic_sensor: BasicSensor::default(),
             docking_ir: DockingIR::default(),
             inertial_sensor: InertialSensor::default(),
