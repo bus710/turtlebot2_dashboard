@@ -303,9 +303,9 @@ pub fn divide_packet(buffer: &[u8], headers: &[usize]) -> Result<Vec<Vec<u8>>> {
 }
 
 pub fn check_crc(packet: &Vec<u8>) -> bool {
+    // Broken packet, most likely.
     let packet_len = packet.len();
     if packet_len < 81 {
-        // Broken packet, most likely.
         return false;
     }
 
