@@ -220,10 +220,11 @@ impl Feedback {
     }
 }
 
+// decode buffer => packets => feedbacks
 pub fn decode(len: usize, buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feedback>, Vec<u8>)> {
     // Check if the length if enough.
     // The min length is 70.
-    if len < 70 {
+    if len < 81 {
         return Err(anyhow!("Not enough data"));
     }
 
@@ -233,8 +234,9 @@ pub fn decode(len: usize, buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feed
     // Search for the preambles (0xaa, 0x55)
     let headers = search_header(&buffer[..len])?; // Headers not found
 
-    // If the first preambles set is not located at 0 of the buffer,
-    // The residue from previous iteration should be used to make a complete packet
+    // If the first preambles set is not located at 0 of the buffer, there is a broken packet
+    // The residue from previous iteration and the broken packet
+    // should be used to make a complete packet
     if headers[0] != 0 && residue.len() != 0 {
         let broken_packet = &buffer[..headers[0]];
         let merged_packet = merge_residue(&residue, broken_packet)?; // Merged failed
@@ -301,6 +303,12 @@ pub fn divide_packet(buffer: &[u8], headers: &[usize]) -> Result<Vec<Vec<u8>>> {
 }
 
 pub fn check_crc(packet: &Vec<u8>) -> bool {
+    let packet_len = packet.len();
+    if packet_len < 81 {
+        // Broken packet, most likely.
+        return false;
+    }
+
     let last = packet.len() - 1;
     let checksum = packet.as_slice()[last];
     let mut acc: u8 = 0;
@@ -327,9 +335,8 @@ pub fn format_feedback(packet: &Vec<u8>) -> Result<Feedback> {
         if index >= total_len || exit_count > 20 {
             break;
         }
-        let payload_index = packet[index as usize];
-        let id = num::FromPrimitive::from_u8(payload_index);
 
+        let id = num::FromPrimitive::from_u8(packet[index as usize]);
         match id {
             Some(FeedbackId::BasicSensor) => {
                 f.basic_sensor.valid = true;

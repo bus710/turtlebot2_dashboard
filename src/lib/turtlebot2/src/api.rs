@@ -39,7 +39,7 @@ pub fn open_port(port_name: String) {
     let mut buffer = [0; 4096];
     let mut residue = Vec::new();
 
-    for i in 0..10 {
+    for i in 0..1024 {
         let len = port.read(&mut buffer).expect("Read failed");
         let d = turtlebot2::decode(len, &buffer, &residue);
         match d {
@@ -52,7 +52,7 @@ pub fn open_port(port_name: String) {
                 eprintln!("Error - {:?}", e);
             }
         }
-        eprintln!("==================");
+        eprintln!("================== {:?}", i);
         thread::sleep(Duration::from_millis(64)); // with 64 ms, the read returns about 220~350 bytes
     }
 }
