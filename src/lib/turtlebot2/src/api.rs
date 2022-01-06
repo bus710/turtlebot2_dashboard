@@ -1,7 +1,7 @@
 #![allow(unused)]
 
-use std::os::raw;
-use std::slice::Iter;
+// use std::os::raw;
+// use std::slice::Iter;
 // use std::sync::atomic::{AtomicI32, Ordering};
 // use std::sync::{self, mpsc, Arc};
 use std::thread;
@@ -45,16 +45,14 @@ pub fn open_port(port_name: String) {
         match d {
             Ok(v) => {
                 let (f, r) = v;
-                eprintln!("f - {:?}", f);
+                // eprintln!("f - {:?}", f);
                 residue = r;
             }
             Err(e) => {
-                //
+                eprintln!("Error - {:?}", e);
             }
         }
-
         eprintln!("==================");
-        eprintln!();
         thread::sleep(Duration::from_millis(64)); // with 64 ms, the read returns about 220~350 bytes
     }
 }

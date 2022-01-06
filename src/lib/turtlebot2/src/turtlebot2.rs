@@ -224,37 +224,34 @@ pub fn decode(len: usize, buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feed
     // Check if the length if enough.
     // The min length is 70.
     if len < 70 {
-        return Err(anyhow!(""));
+        return Err(anyhow!("Not enough data"));
     }
 
     let mut feedbacks = Vec::new();
     let mut new_residue = Vec::new();
 
     // Search for the preambles (0xaa, 0x55)
-    let headers = search_header(&buffer[..len]).expect("Headers not found");
+    let headers = search_header(&buffer[..len])?; // Headers not found
 
     // If the first preambles set is not located at 0 of the buffer,
     // The residue from previous iteration should be used to make a complete packet
-    if headers[0] != 0 {
+    if headers[0] != 0 && residue.len() != 0 {
         let broken_packet = &buffer[..headers[0]];
-        if residue.len() != 0 {
-            let merged_packet = merge_residue(&residue, broken_packet).expect("Merged failed");
-            let correct_crc = check_crc(&merged_packet);
-            if correct_crc {
-                let f = format_feedback(&merged_packet).expect("Formatting failed");
-                feedbacks.push(f);
-            }
+        let merged_packet = merge_residue(&residue, broken_packet)?; // Merged failed
+        let correct_crc = check_crc(&merged_packet);
+        if correct_crc {
+            let f = format_feedback(&merged_packet)?; // Formatting failed
+            feedbacks.push(f);
         }
-        eprintln!();
     }
 
     // Divide packets by header found
-    let packets = divide_packet(&buffer[..len], &headers).expect("Packets not found");
+    let packets = divide_packet(&buffer[..len], &headers)?; // Packets not found
     for (i, packet) in packets.iter().enumerate() {
         // Check CRC and set the residue to pass to next iteration.
         let correct_crc = check_crc(&packet.clone());
         if correct_crc {
-            let f = format_feedback(packet).expect("Formatting failed");
+            let f = format_feedback(packet)?; // Formatting failed
             feedbacks.push(f);
             new_residue = [0u8; 0].to_vec(); // Clear so don't pass to the next iteration
         } else {
@@ -280,7 +277,6 @@ pub fn merge_residue(residue: &[u8], broken_packet: &[u8]) -> Result<Vec<u8>> {
     let mut a = residue.clone().to_vec();
     let b = broken_packet.to_vec();
     a.extend(b);
-
     Ok(a)
 }
 
