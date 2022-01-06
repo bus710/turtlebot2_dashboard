@@ -19,7 +19,6 @@ use crate::turtlebot2::{self, *};
 
 pub fn hello2() -> Result<()> {
     eprintln!("{:?}", "hello2");
-    turtlebot2::hello();
 
     Ok(())
 }
@@ -42,9 +41,17 @@ pub fn open_port(port_name: String) {
 
     for i in 0..10 {
         let len = port.read(&mut buffer).expect("Read failed");
-        let (f, r) = turtlebot2::decode(len, &buffer, &residue).unwrap();
-        eprintln!("f - {:?}", f);
-        residue = r;
+        let d = turtlebot2::decode(len, &buffer, &residue);
+        match d {
+            Ok(v) => {
+                let (f, r) = v;
+                eprintln!("f - {:?}", f);
+                residue = r;
+            }
+            Err(e) => {
+                //
+            }
+        }
 
         eprintln!("==================");
         eprintln!();
