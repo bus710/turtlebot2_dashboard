@@ -221,9 +221,10 @@ impl Feedback {
 }
 
 // decode buffer => packets => feedbacks
-pub fn decode(len: usize, buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feedback>, Vec<u8>)> {
+pub fn decode(buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feedback>, Vec<u8>)> {
     // Check if the length if enough.
     // The min length is 70.
+    let len = buffer.len();
     if len < 81 {
         return Err(anyhow!("Not enough data"));
     }

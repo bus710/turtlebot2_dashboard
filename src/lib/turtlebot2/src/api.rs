@@ -39,13 +39,13 @@ pub fn open_port(port_name: String) {
     let mut buffer = [0; 4096];
     let mut residue = Vec::new();
 
-    for i in 0..1024 {
+    for i in 0..10 {
         let len = port.read(&mut buffer).expect("Read failed");
-        let d = turtlebot2::decode(len, &buffer, &residue);
+        let d = turtlebot2::decode(&buffer[..len], &residue);
         match d {
             Ok(v) => {
                 let (f, r) = v;
-                // eprintln!("f - {:?}", f);
+                eprintln!("f - {:?}", f);
                 residue = r;
             }
             Err(e) => {
