@@ -331,8 +331,13 @@ pub fn format_feedback(packet: &Vec<u8>) -> Result<Feedback> {
     f.epoch_time_stamp = get_epoch_ms();
 
     loop {
+        // There are only 11 enums. 
         exit_count += 1;
-        if index >= total_len || exit_count > 20 {
+        if exit_count > 11 {
+            break;
+        }
+        // To prevent OoR
+        if index >= total_len {
             break;
         }
 
