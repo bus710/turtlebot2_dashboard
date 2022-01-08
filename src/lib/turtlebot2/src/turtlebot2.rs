@@ -331,12 +331,12 @@ pub fn format_feedback(packet: &Vec<u8>) -> Result<Feedback> {
     f.epoch_time_stamp = get_epoch_ms();
 
     loop {
-        // There are only 11 enums. 
+        // There are only 11 entries in FeedBackId. 
         exit_count += 1;
         if exit_count > 11 {
             break;
         }
-        // To prevent OoR
+        // To prevent Our of Range access
         if index >= total_len {
             break;
         }
