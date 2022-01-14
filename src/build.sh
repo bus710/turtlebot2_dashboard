@@ -2,23 +2,7 @@
 
 set -e
 
-hide_main(){
-    term_color_red
-    echo "HIDE MAIN"
-    term_color_white
-
-    mv lib/turtlebot2/src/main.rs .
-}
-
-recover_main(){
-    term_color_red
-    echo "RECOVER MAIN"
-    term_color_white
-
-    mv ./main.rs lib/turtlebot2/src
-}
-
-remove_all(){
+remove_target(){
     term_color_red
     echo "REMOVE TARGET"
     term_color_white
@@ -32,7 +16,7 @@ codegen () {
     term_color_white
 
     flutter_rust_bridge_codegen \
-        --rust-input lib/turtlebot2/src/api.rs \
+        --rust-input lib/adapter/src/api.rs \
         --dart-output dashboard/lib/bridge_generated.dart \
         --llvm-path /usr/lib/llvm-13/lib/libclang.so
 
@@ -55,7 +39,7 @@ move () {
     DLIB="dashboard/dlib"
     rm -rf $DLIB
     mkdir -p $DLIB
-    mv target/debug/libturtlebot2.so $DLIB
+    mv target/debug/libadapter.so $DLIB
 
 }
 
@@ -76,11 +60,9 @@ byebye () {
 }
 
 trap term_color_white EXIT
-hide_main
-remove_all
+remove_target
 codegen
 cargo_make
 move
-remove_all
-recover_main
+remove_target
 byebye
