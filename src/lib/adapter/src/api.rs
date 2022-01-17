@@ -26,6 +26,8 @@ const SERIAL: &str = "kobuki";
 use once_cell::sync::OnceCell;
 use std::sync::Mutex;
 
+use crate::adapter::{Adapter, AdapterRunner};
+
 // Static channel to interact with adapter
 static SEND: OnceCell<crossbeam_channel::Sender<bool>> = OnceCell::new();
 
@@ -56,18 +58,19 @@ pub fn available_tutlebots() -> Result<Vec<String>> {
 }
 
 pub fn spawn_adapter(sink: StreamSink<String>) -> Result<()> {
-    let (sender, receiver) = unbounded();
+    println!("set sender 1");
 
-    thread::spawn(move || loop {
-        let a = receiver.recv().unwrap();
-        println!("from Rust thread - {:?}", a);
-        sink.add("a".to_string());
-        thread::sleep(Duration::from_millis(1000));
-    });
+    let (sender, receiver) = unbounded();
 
     // let g = Mutex::lock(SEND).unwrap();
     // let g = SEND.lock().unwrap();
+    println!("set sender 1");
     SEND.set(sender);
+
+    let mut adt_runner = AdapterRunner::new(receiver, sink);
+    println!("set sender 2");
+    adt_runner.run();
+
     Ok(())
 }
 
@@ -79,6 +82,5 @@ pub fn send_to_adapter() -> Result<()> {
 }
 
 pub fn receive_from_adapter() -> Result<()> {
-
     Ok(())
 }

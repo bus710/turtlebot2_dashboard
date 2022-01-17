@@ -10,6 +10,14 @@ remove_target(){
     rm -rf ./target
 }
 
+remove_generated() {
+    term_color_red
+    echo "REMOVE GENERATED"
+    term_color_white
+
+    rm -rf ./dashboard/lib/bridge_generated.dart
+}
+
 codegen () {
     term_color_red
     echo "CODE GEN"
@@ -61,6 +69,7 @@ byebye () {
 
 trap term_color_white EXIT
 remove_target
+remove_generated
 codegen
 cargo_make
 move

@@ -15,6 +15,12 @@ abstract class Adapter extends FlutterRustBridgeBase<AdapterWire> {
   Adapter.raw(AdapterWire inner) : super(inner);
 
   Future<List<String>> availableTutlebots({dynamic hint});
+
+  Stream<String> spawnAdapter({dynamic hint});
+
+  Future<void> sendToAdapter({dynamic hint});
+
+  Future<void> receiveFromAdapter({dynamic hint});
 }
 
 // ------------------------- Implementation Details -------------------------
@@ -31,6 +37,42 @@ class AdapterImpl extends Adapter {
         parseSuccessData: _wire2api_StringList,
         constMeta: const FlutterRustBridgeTaskConstMeta(
           debugName: "available_tutlebots",
+          argNames: [],
+        ),
+        argValues: [],
+        hint: hint,
+      ));
+
+  Stream<String> spawnAdapter({dynamic hint}) =>
+      executeStream(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_spawn_adapter(port),
+        parseSuccessData: _wire2api_String,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "spawn_adapter",
+          argNames: [],
+        ),
+        argValues: [],
+        hint: hint,
+      ));
+
+  Future<void> sendToAdapter({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_send_to_adapter(port),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "send_to_adapter",
+          argNames: [],
+        ),
+        argValues: [],
+        hint: hint,
+      ));
+
+  Future<void> receiveFromAdapter({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_receive_from_adapter(port),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "receive_from_adapter",
           argNames: [],
         ),
         argValues: [],
@@ -58,6 +100,10 @@ int _wire2api_u8(dynamic raw) {
 
 Uint8List _wire2api_uint_8_list(dynamic raw) {
   return raw as Uint8List;
+}
+
+void _wire2api_unit(dynamic raw) {
+  return;
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -95,6 +141,48 @@ class AdapterWire implements FlutterRustBridgeWireBase {
           'wire_available_tutlebots');
   late final _wire_available_tutlebots =
       _wire_available_tutlebotsPtr.asFunction<void Function(int)>();
+
+  void wire_spawn_adapter(
+    int port_,
+  ) {
+    return _wire_spawn_adapter(
+      port_,
+    );
+  }
+
+  late final _wire_spawn_adapterPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_spawn_adapter');
+  late final _wire_spawn_adapter =
+      _wire_spawn_adapterPtr.asFunction<void Function(int)>();
+
+  void wire_send_to_adapter(
+    int port_,
+  ) {
+    return _wire_send_to_adapter(
+      port_,
+    );
+  }
+
+  late final _wire_send_to_adapterPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_send_to_adapter');
+  late final _wire_send_to_adapter =
+      _wire_send_to_adapterPtr.asFunction<void Function(int)>();
+
+  void wire_receive_from_adapter(
+    int port_,
+  ) {
+    return _wire_receive_from_adapter(
+      port_,
+    );
+  }
+
+  late final _wire_receive_from_adapterPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_receive_from_adapter');
+  late final _wire_receive_from_adapter =
+      _wire_receive_from_adapterPtr.asFunction<void Function(int)>();
 
   void free_WireSyncReturnStruct(
     WireSyncReturnStruct val,

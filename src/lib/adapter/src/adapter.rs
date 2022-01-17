@@ -1,4 +1,76 @@
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
+use flutter_rust_bridge::StreamSink;
+use ttb2::{rx::Feedback, tx};
+use turtlebot2 as ttb2;
+
+#[derive(Clone)]
+pub struct Adapter {
+    receiver: crossbeam_channel::Receiver<bool>,
+    sink: StreamSink<String>,
+    feedbacks: Vec<Feedback>,
+}
+
+impl Adapter {
+    pub fn new(rx: crossbeam_channel::Receiver<bool>, sk: StreamSink<String>) -> Adapter {
+        Adapter {
+            receiver: rx,
+            sink: sk,
+            feedbacks: Vec::new(),
+        }
+    }
+    pub fn open(&mut self) {}
+    pub fn close(&mut self) {}
+    pub fn read(&mut self) {}
+    pub fn write(&mut self) {}
+}
+
+pub struct AdapterRunner {
+    adapter_lock: Arc<Mutex<Adapter>>,
+}
+
+impl AdapterRunner {
+    pub fn new(rx: crossbeam_channel::Receiver<bool>, sk: StreamSink<String>) -> AdapterRunner {
+        let adt_lock = Adapter::new(rx, sk);
+        AdapterRunner {
+            adapter_lock: Arc::new(Mutex::new(adt_lock)),
+        }
+    }
+
+    pub fn run(&mut self) {
+        // Get the mutex
+        let adt_lock = self.adapter_lock.clone();
+        // Thread body
+        thread::spawn(move || {
+            // Unlock the mutex
+            let mut adt = adt_lock.lock().unwrap();
+            // Enter the loop
+            loop {
+                crossbeam_channel::select! {
+                recv(adt.receiver) -> v =>{
+                    match v{
+                        Ok(vv) => {
+                            eprintln!("from Rust thread - {:?}", vv);
+                            adt.open();
+                            adt.close();
+                            adt.read();
+                            adt.write();
+                        },
+                        Err (e) => {
+                            eprintln!("{:?}", e);},
+                        }
+                    }
+                }
+                adt.sink.add("a".to_string());
+                thread::sleep(Duration::from_millis(10));
+            }
+        });
+    }
+}
 
 // pub fn open_port(port_name: String) {
 //     eprintln!("{:?}", port_name);

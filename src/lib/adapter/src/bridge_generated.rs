@@ -25,6 +25,42 @@ pub extern "C" fn wire_available_tutlebots(port_: i64) {
     )
 }
 
+#[no_mangle]
+pub extern "C" fn wire_spawn_adapter(port_: i64) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "spawn_adapter",
+            port: Some(port_),
+            mode: FfiCallMode::Stream,
+        },
+        move || move |task_callback| spawn_adapter(task_callback.stream_sink()),
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_send_to_adapter(port_: i64) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "send_to_adapter",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| send_to_adapter(),
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_receive_from_adapter(port_: i64) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "receive_from_adapter",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| receive_from_adapter(),
+    )
+}
+
 // Section: wire structs
 
 // Section: wire enums
