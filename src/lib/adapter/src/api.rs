@@ -4,6 +4,7 @@
 // use std::slice::Iter;
 // use std::sync::atomic::{AtomicI32, Ordering};
 // use std::sync::{self, mpsc, Arc};
+use std::convert::From;
 use std::thread;
 use std::time::Duration;
 
@@ -12,13 +13,21 @@ use crossbeam_channel::unbounded;
 use itertools::Itertools;
 use serialport::{SerialPortInfo, SerialPortType};
 
+use ttb2::rx::Feedback;
 use ttb2::{rx, tx};
 use turtlebot2 as ttb2;
 
 use flutter_rust_bridge::rust2dart::TaskCallback;
+use flutter_rust_bridge::support::{into_leak_vec_ptr, DartCObject};
 use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
 
 const SERIAL: &str = "kobuki";
+
+use once_cell::sync::OnceCell;
+use std::sync::Mutex;
+
+// Static channel to interact with adapter
+static SEND: OnceCell<crossbeam_channel::Sender<bool>> = OnceCell::new();
 
 pub fn available_tutlebots() -> Result<Vec<String>> {
     let ports = serialport::available_ports()?;
@@ -46,37 +55,30 @@ pub fn available_tutlebots() -> Result<Vec<String>> {
     Ok(found)
 }
 
-// pub fn open_port(port_name: String) {
-//     eprintln!("{:?}", port_name);
+pub fn spawn_adapter(sink: StreamSink<String>) -> Result<()> {
+    let (sender, receiver) = unbounded();
 
-//     let mut port = serialport::new(port_name, 115200)
-//         .open()
-//         .expect("Open port");
-//     port.set_timeout(Duration::from_millis(1024));
+    thread::spawn(move || loop {
+        let a = receiver.recv().unwrap();
+        println!("from Rust thread - {:?}", a);
+        sink.add("a".to_string());
+        thread::sleep(Duration::from_millis(1000));
+    });
 
-//     let mut buffer = [0; 4096];
-//     let mut residue = Vec::new();
+    // let g = Mutex::lock(SEND).unwrap();
+    // let g = SEND.lock().unwrap();
+    SEND.set(sender);
+    Ok(())
+}
 
-//     for i in 0..10 {
-//         let len = port.read(&mut buffer).expect("Read failed");
-//         let d = ttb2::rx::decode(&buffer[..len], &residue);
-//         match d {
-//             Ok(v) => {
-//                 let (f, r) = v;
-//                 // eprintln!("f - {:?}", f);
-//                 residue = r;
-//             }
-//             Err(e) => {
-//                 eprintln!("Error - {:?}", e);
-//             }
-//         }
-//         eprintln!("================== {:?}", i);
-//         thread::sleep(Duration::from_millis(64)); // with 64 ms, the read returns about 220~350 bytes
-//     }
+pub fn send_to_adapter() -> Result<()> {
+    let tx = SEND.get();
+    let tx2 = tx.unwrap();
+    tx2.send(true);
+    Ok(())
+}
 
-//     // let cmd = base_control_command(0x1, 0x1).expect("");
-//     // port.write(&cmd);
-//     // thread::sleep(Duration::from_millis(1000)); // with 64 ms, the read returns about 220~350 bytes
-//     // let cmd = base_control_command(0x0, 0x0).expect("");
-//     // port.write(&cmd);
-// }
+pub fn receive_from_adapter() -> Result<()> {
+
+    Ok(())
+}
