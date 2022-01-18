@@ -206,6 +206,7 @@ pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
 
     // The receiver is passed to the turtlebot instance so flutter can send command to turtlebot
     // The sink is passed to the turtlebot instance so it can actively send result to flutter
+    // => then flutter should call receive_from_turtlebot to take the data
     let mut ttb_runner = TurtlebotRunner::new(receiver, sink);
     ttb_runner.run();
 
