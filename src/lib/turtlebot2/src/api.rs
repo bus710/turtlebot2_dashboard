@@ -23,8 +23,8 @@ use crate::turtlebot2::{Turtlebot, TurtlebotRunner};
 #[derive(Debug, Clone, Derivative)]
 #[derivative(Default)]
 pub struct Feedback {
-    #[derivative(Default(value = "0"))]
-    pub epoch_time_stamp: i32,
+    // #[derivative(Default(value = "0"))]
+    pub epoch_time_stamp: String,
     pub basic_sensor: BasicSensor,
     pub docking_ir: DockingIR,
     pub inertial_sensor: InertialSensor,
@@ -150,7 +150,7 @@ pub struct ControllerInfo {
 impl Feedback {
     pub fn new() -> Feedback {
         Feedback {
-            epoch_time_stamp: 0,
+            epoch_time_stamp: "".to_string(),
             basic_sensor: BasicSensor::default(),
             docking_ir: DockingIR::default(),
             inertial_sensor: InertialSensor::default(),
