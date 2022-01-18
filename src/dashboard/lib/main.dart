@@ -3,9 +3,9 @@ import 'package:dashboard/bridge_generated.dart';
 import 'dart:async';
 import 'dart:ffi';
 
-const path = 'dlib/libadapter.so';
-late final dylib = DynamicLibrary.open(path);
-late final ttb2Adapter = Adapter(dylib);
+const ttbPath = 'dlib/libturtlebot2.so';
+late final ttbDlib = DynamicLibrary.open(ttbPath);
+late final ttb = Turtlebot2Impl(ttbDlib);
 
 void main() {
   _spawn();
@@ -13,7 +13,7 @@ void main() {
 }
 
 Future<void> _spawn() async {
-  final a = ttb2Adapter.spawnAdapter();
+  final a = ttb.spawnTurtlebot();
   await for (final v in a) {
     debugPrint(v.toString());
   }
@@ -82,12 +82,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _print() async {
-    await ttb2Adapter.availableTutlebots().then((v) {
+    await ttb.availableTutlebots().then((v) {
       v.forEach(debugPrint);
     }).catchError((e) {
       debugPrint("Error: " + e.toString());
     });
 
-    await ttb2Adapter.sendToAdapter();
+    await ttb.sendToTurtlebot();
   }
 }

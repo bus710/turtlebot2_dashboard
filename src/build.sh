@@ -4,15 +4,16 @@ set -e
 
 remove_target(){
     term_color_red
-    echo "REMOVE TARGET"
+    printf "REMOVE TARGET"
     term_color_white
 
+    cargo clean
     rm -rf ./target
 }
 
 remove_generated() {
     term_color_red
-    echo "REMOVE GENERATED"
+    printf "REMOVE GENERATED"
     term_color_white
 
     rm -rf ./dashboard/lib/bridge_generated.dart
@@ -20,20 +21,19 @@ remove_generated() {
 
 codegen () {
     term_color_red
-    echo "CODE GEN"
+    printf "CODE GEN"
     term_color_white
 
     flutter_rust_bridge_codegen \
-        --rust-input lib/adapter/src/api.rs \
+        --rust-input lib/turtlebot2/src/api.rs \
         --dart-output dashboard/lib/bridge_generated.dart \
         --llvm-path /usr/lib/llvm-13/lib/libclang.so
 
-    echo
 }
 
 cargo_make () {
     term_color_red
-    echo "CARGO MAKE"
+    printf "CARGO MAKE"
     term_color_white
 
     cargo make
@@ -41,29 +41,31 @@ cargo_make () {
 
 move () {
     term_color_red
-    echo "MOVE to DLIB"
+    printf "MOVE to DLIB"
     term_color_white
 
     DLIB="dashboard/dlib"
     rm -rf $DLIB
     mkdir -p $DLIB
-    mv target/debug/libadapter.so $DLIB
+    mv target/debug/libturtlebot2.so $DLIB
 
 }
 
 term_color_red () {
     echo -e "\e[91m"
-    echo
+}
+
+term_color_green () {
+    echo -e "\e[92m"
 }
 
 term_color_white () {
-    echo
     echo -e "\e[39m"
 }
 
 byebye () {
-    term_color_red
-    echo "The library is ready under DLIB"
+    term_color_green
+    printf "READY under dashboard/dlib"
     term_color_white
 }
 
