@@ -1,29 +1,20 @@
 #![allow(unused)]
 
+use std::ops::{Shl, Shr};
 use std::sync::{Arc, Mutex};
-// use std::convert::From;
-// use std::time::Duration;
-// use std::{thread, vec};
 
 use anyhow::{anyhow, Error, Result};
 use crossbeam_channel::unbounded;
 use derivative::*;
+use flutter_rust_bridge::{StreamSink, SyncReturn};
 use once_cell::sync::OnceCell;
 use serialport::{SerialPortInfo, SerialPortType};
-// use crossbeam_channel::internal::SelectHandle;
-// use itertools::Itertools;
 
-use flutter_rust_bridge::{StreamSink, SyncReturn};
-// use flutter_rust_bridge::rust2dart::TaskCallback;
-// use flutter_rust_bridge::support::{into_leak_vec_ptr, DartCObject, IntoDart};
-// use flutter_rust_bridge::{StreamSink, SyncReturn, ZeroCopyBuffer};
-
-use crate::turtlebot2::{Turtlebot, TurtlebotRunner};
+use crate::turtlebot2::*;
 
 #[derive(Debug, Clone, Derivative)]
 #[derivative(Default)]
 pub struct Feedback {
-    // #[derivative(Default(value = "0"))]
     pub epoch_time_stamp: String,
     pub basic_sensor: BasicSensor,
     pub docking_ir: DockingIR,
@@ -169,8 +160,9 @@ impl Feedback {
 //
 #[derive(Debug, Clone)]
 pub struct Command {
-    pub ty: String,
-    pub opt: String,
+    pub ty: CommandId,
+    pub serial_command: String,
+    pub serial_port: String,
     pub payload: Vec<u8>,
 }
 
@@ -222,26 +214,6 @@ pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn send_to_turtlebot(command: Command) -> Result<()> {
-    let tx_lock = SEND.get().unwrap();
-    let tx = tx_lock.lock().unwrap();
-    tx.send(command);
-    Ok(())
-}
-
-pub fn open_port_command(port: String) -> Result<()> {
-    let mut cmd = Command {
-        ty: "serial".to_string(),
-        opt: port,
-        payload: Vec::new(),
-    };
-    let tx_lock = SEND.get().unwrap();
-    let tx = tx_lock.lock().unwrap();
-    tx.send(cmd);
-
-    Ok(())
-}
-
 pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
     let fbd_lock = RECEIVE.get().unwrap();
     let fbd = fbd_lock.lock().unwrap();
@@ -250,4 +222,69 @@ pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
     }
 
     Err(anyhow!(""))
+}
+
+pub fn open_port_command(serial_port: String) -> Result<()> {
+    let mut cmd = Command {
+        ty: CommandId::SerialControl,
+        serial_command: "open".to_string(),
+        serial_port: serial_port,
+        payload: Vec::new(),
+    };
+    let tx_lock = SEND.get().unwrap();
+    let tx = tx_lock.lock().unwrap();
+    tx.send(cmd);
+    Ok(())
+}
+
+pub fn close_port_command() -> Result<()> {
+    let mut cmd = Command {
+        ty: CommandId::SerialControl,
+        serial_command: "close".to_string(),
+        serial_port: "".to_string(),
+        payload: Vec::new(),
+    };
+    let tx_lock = SEND.get().unwrap();
+    let tx = tx_lock.lock().unwrap();
+    tx.send(cmd);
+    Ok(())
+}
+
+pub fn base_control_command(speed: u16, radius: u16) -> Result<()> {
+    let mut payload: Vec<u8> = Vec::new();
+    payload.push(0xaa);
+    payload.push(0x55);
+    payload.push(CMD_LEN_BASE_CONTROL);
+    payload.push(CommandId::BaseControl as u8);
+    payload.push(CMD_SIZE_BASE_CONTROL);
+    payload.push((speed & 0xff) as u8);
+    payload.push((speed & 0xff00).shr(8) as u8);
+    payload.push((radius & 0xff) as u8);
+    payload.push((radius & 0xff00).shr(8) as u8);
+    let crc = generate_crc(&payload.clone());
+    payload.push(crc);
+
+    let mut cmd = Command {
+        ty: CommandId::BaseControl,
+        serial_command: "".to_string(),
+        serial_port: "".to_string(),
+        payload: payload,
+    };
+    let tx_lock = SEND.get().unwrap();
+    let tx = tx_lock.lock().unwrap();
+    tx.send(cmd);
+
+    Ok(())
+}
+
+fn generate_crc(payload: &[u8]) -> u8 {
+    if payload.len() < 5 {
+        return 0;
+    }
+    let payload = payload[5..].to_vec();
+    let mut acc = 0;
+    for (_, c) in payload.iter().enumerate() {
+        acc = acc ^ *c;
+    }
+    acc
 }

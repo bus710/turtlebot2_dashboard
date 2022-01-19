@@ -38,36 +38,6 @@ pub extern "C" fn wire_spawn_turtlebot(port_: i64) {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_send_to_turtlebot(port_: i64, command: *mut wire_Command) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-        WrapInfo {
-            debug_name: "send_to_turtlebot",
-            port: Some(port_),
-            mode: FfiCallMode::Normal,
-        },
-        move || {
-            let api_command = command.wire2api();
-            move |task_callback| send_to_turtlebot(api_command)
-        },
-    )
-}
-
-#[no_mangle]
-pub extern "C" fn wire_open_port_command(port_: i64, port: *mut wire_uint_8_list) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-        WrapInfo {
-            debug_name: "open_port_command",
-            port: Some(port_),
-            mode: FfiCallMode::Normal,
-        },
-        move || {
-            let api_port = port.wire2api();
-            move |task_callback| open_port_command(api_port)
-        },
-    )
-}
-
-#[no_mangle]
 pub extern "C" fn wire_receive_from_turtlebot(port_: i64) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
@@ -79,15 +49,50 @@ pub extern "C" fn wire_receive_from_turtlebot(port_: i64) {
     )
 }
 
-// Section: wire structs
-
-#[repr(C)]
-#[derive(Clone)]
-pub struct wire_Command {
-    ty: *mut wire_uint_8_list,
-    opt: *mut wire_uint_8_list,
-    payload: *mut wire_uint_8_list,
+#[no_mangle]
+pub extern "C" fn wire_open_port_command(port_: i64, serial_port: *mut wire_uint_8_list) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "open_port_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_serial_port = serial_port.wire2api();
+            move |task_callback| open_port_command(api_serial_port)
+        },
+    )
 }
+
+#[no_mangle]
+pub extern "C" fn wire_close_port_command(port_: i64) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "close_port_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| close_port_command(),
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_base_control_command(port_: i64, speed: u16, radius: u16) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "base_control_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_speed = speed.wire2api();
+            let api_radius = radius.wire2api();
+            move |task_callback| base_control_command(api_speed, api_radius)
+        },
+    )
+}
+
+// Section: wire structs
 
 #[repr(C)]
 #[derive(Clone)]
@@ -99,11 +104,6 @@ pub struct wire_uint_8_list {
 // Section: wire enums
 
 // Section: allocate functions
-
-#[no_mangle]
-pub extern "C" fn new_box_autoadd_command() -> *mut wire_Command {
-    support::new_leak_box_ptr(wire_Command::new_with_null_ptr())
-}
 
 #[no_mangle]
 pub extern "C" fn new_uint_8_list(len: i32) -> *mut wire_uint_8_list {
@@ -140,20 +140,9 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
     }
 }
 
-impl Wire2Api<Command> for *mut wire_Command {
-    fn wire2api(self) -> Command {
-        let wrap = unsafe { support::box_from_leak_ptr(self) };
-        (*wrap).wire2api().into()
-    }
-}
-
-impl Wire2Api<Command> for wire_Command {
-    fn wire2api(self) -> Command {
-        Command {
-            ty: self.ty.wire2api(),
-            opt: self.opt.wire2api(),
-            payload: self.payload.wire2api(),
-        }
+impl Wire2Api<u16> for u16 {
+    fn wire2api(self) -> u16 {
+        self
     }
 }
 
@@ -181,16 +170,6 @@ pub trait NewWithNullPtr {
 impl<T> NewWithNullPtr for *mut T {
     fn new_with_null_ptr() -> Self {
         std::ptr::null_mut()
-    }
-}
-
-impl NewWithNullPtr for wire_Command {
-    fn new_with_null_ptr() -> Self {
-        Self {
-            ty: core::ptr::null_mut(),
-            opt: core::ptr::null_mut(),
-            payload: core::ptr::null_mut(),
-        }
     }
 }
 

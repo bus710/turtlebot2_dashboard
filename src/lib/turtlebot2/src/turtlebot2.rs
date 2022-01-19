@@ -7,10 +7,41 @@ use std::{
 };
 
 use anyhow::{anyhow, Error, Result};
-
 use flutter_rust_bridge::StreamSink;
 
 use crate::api::*;
+
+// Variant enum
+#[derive(Debug, Clone)]
+pub enum CommandId {
+    SerialControl = 0, // Only to open/close serial port
+    BaseControl = 1,
+    Sound = 3,
+    SoundSequence = 4,
+    RequestExtra = 9,
+    GeneralPurposeOutput = 12,
+    SetControllerGain = 13,
+    GetControllerGain = 14,
+}
+
+// These can be used to set the length of command
+// Total length = ID + Size + Payload + CRC
+pub const CMD_LEN_BASE_CONTROL: u8 = 7;
+pub const CMD_LEN_SOUND: u8 = 6;
+pub const CMD_LEN_SOUND_SEQUENCE: u8 = 4;
+pub const CMD_LEN_REQUEST_EXTRA: u8 = 5;
+pub const CMD_LEN_GENERAL_PURPOSE_OUTPUT: u8 = 5;
+pub const CMD_LEN_SET_CONTROLLER_GAIN: u8 = 16;
+pub const CMD_LEN_GET_CONTROLLER_GAIN: u8 = 4;
+
+// These can be used to set the size of payload
+pub const CMD_SIZE_BASE_CONTROL: u8 = 4;
+pub const CMD_SIZE_SOUND: u8 = 3;
+pub const CMD_SIZE_SOUND_SEQUENCE: u8 = 1;
+pub const CMD_SIZE_REQUEST_EXTRA: u8 = 2;
+pub const CMD_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 2;
+pub const CMD_SIZE_SET_CONTROLLER_GAIN: u8 = 13;
+pub const CMD_SIZE_GET_CONTROLLER_GAIN: u8 = 1;
 
 // Variant enum
 #[derive(Debug, FromPrimitive, ToPrimitive)]
@@ -345,7 +376,7 @@ fn get_epoch_ms() -> String {
 pub struct Turtlebot {
     receiver: crossbeam_channel::Receiver<Command>,
     sink: StreamSink<String>,
-    // feedbacks: Vec<Feedback>,
+    feedbacks: Vec<Feedback>,
 }
 
 impl Turtlebot {
@@ -353,7 +384,7 @@ impl Turtlebot {
         Turtlebot {
             receiver: rx,
             sink: sk,
-            // feedbacks: Vec::new(),
+            feedbacks: Vec::new(),
         }
     }
     pub fn open(&mut self) {}
@@ -387,20 +418,21 @@ impl TurtlebotRunner {
             // Enter the loop
             loop {
                 crossbeam_channel::select! {
-                recv(ttb.receiver) -> v =>{
-                    match v{
-                        Ok(vv) => {
-                            eprintln!("from Rust thread - {:?}", vv);
-                            ttb.open();
-                            ttb.close();
-                            ttb.read();
-                            ttb.write();
-                            let f = Feedback::new();
-                            let mut ff = Vec::new();
-                            ff.push(f);
-                        },
-                        Err (e) => {
-                            eprintln!("{:?}", e);},
+                    recv(ttb.receiver) -> v =>{
+                        match v{
+                            Ok(vv) => {
+                                eprintln!("from Rust thread - {:?}", vv);
+                                ttb.open();
+                                ttb.close();
+                                ttb.read();
+                                ttb.write();
+                                let f = Feedback::new();
+                                let mut ff = Vec::new();
+                                ff.push(f);
+                            },
+                            Err (e) => {
+                                eprintln!("{:?}", e);
+                            },
                         }
                     }
                 }

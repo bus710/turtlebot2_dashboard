@@ -16,11 +16,14 @@ abstract class Turtlebot2 {
 
   Stream<String> spawnTurtlebot({dynamic hint});
 
-  Future<void> sendToTurtlebot({required Command command, dynamic hint});
-
-  Future<void> openPortCommand({required String port, dynamic hint});
-
   Future<List<Feedback>> receiveFromTurtlebot({dynamic hint});
+
+  Future<void> openPortCommand({required String serialPort, dynamic hint});
+
+  Future<void> closePortCommand({dynamic hint});
+
+  Future<void> baseControlCommand(
+      {required int speed, required int radius, dynamic hint});
 }
 
 class BasicSensor {
@@ -66,18 +69,6 @@ class Cliff {
     required this.rightCliffSensor,
     required this.centralCliffSensor,
     required this.leftCliffSensor,
-  });
-}
-
-class Command {
-  final String ty;
-  final String opt;
-  final Uint8List payload;
-
-  Command({
-    required this.ty,
-    required this.opt,
-    required this.payload,
   });
 }
 
@@ -286,32 +277,6 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
         hint: hint,
       ));
 
-  Future<void> sendToTurtlebot({required Command command, dynamic hint}) =>
-      executeNormal(FlutterRustBridgeTask(
-        callFfi: (port) => inner.wire_send_to_turtlebot(
-            port, _api2wire_box_autoadd_command(command)),
-        parseSuccessData: _wire2api_unit,
-        constMeta: const FlutterRustBridgeTaskConstMeta(
-          debugName: "send_to_turtlebot",
-          argNames: ["command"],
-        ),
-        argValues: [command],
-        hint: hint,
-      ));
-
-  Future<void> openPortCommand({required String port, dynamic hint}) =>
-      executeNormal(FlutterRustBridgeTask(
-        callFfi: (port) =>
-            inner.wire_open_port_command(port, _api2wire_String(port)),
-        parseSuccessData: _wire2api_unit,
-        constMeta: const FlutterRustBridgeTaskConstMeta(
-          debugName: "open_port_command",
-          argNames: ["port"],
-        ),
-        argValues: [port],
-        hint: hint,
-      ));
-
   Future<List<Feedback>> receiveFromTurtlebot({dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
         callFfi: (port) => inner.wire_receive_from_turtlebot(port),
@@ -324,15 +289,52 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
         hint: hint,
       ));
 
+  Future<void> openPortCommand({required String serialPort, dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) =>
+            inner.wire_open_port_command(port, _api2wire_String(serialPort)),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "open_port_command",
+          argNames: ["serialPort"],
+        ),
+        argValues: [serialPort],
+        hint: hint,
+      ));
+
+  Future<void> closePortCommand({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_close_port_command(port),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "close_port_command",
+          argNames: [],
+        ),
+        argValues: [],
+        hint: hint,
+      ));
+
+  Future<void> baseControlCommand(
+          {required int speed, required int radius, dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_base_control_command(
+            port, _api2wire_u16(speed), _api2wire_u16(radius)),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "base_control_command",
+          argNames: ["speed", "radius"],
+        ),
+        argValues: [speed, radius],
+        hint: hint,
+      ));
+
   // Section: api2wire
   ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
     return _api2wire_uint_8_list(utf8.encoder.convert(raw));
   }
 
-  ffi.Pointer<wire_Command> _api2wire_box_autoadd_command(Command raw) {
-    final ptr = inner.new_box_autoadd_command();
-    _api_fill_to_wire_command(raw, ptr.ref);
-    return ptr;
+  int _api2wire_u16(int raw) {
+    return raw;
   }
 
   int _api2wire_u8(int raw) {
@@ -347,16 +349,6 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
 
   // Section: api_fill_to_wire
 
-  void _api_fill_to_wire_box_autoadd_command(
-      Command apiObj, ffi.Pointer<wire_Command> wireObj) {
-    _api_fill_to_wire_command(apiObj, wireObj.ref);
-  }
-
-  void _api_fill_to_wire_command(Command apiObj, wire_Command wireObj) {
-    wireObj.ty = _api2wire_String(apiObj.ty);
-    wireObj.opt = _api2wire_String(apiObj.opt);
-    wireObj.payload = _api2wire_uint_8_list(apiObj.payload);
-  }
 }
 
 // Section: wire2api
@@ -612,40 +604,6 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
   late final _wire_spawn_turtlebot =
       _wire_spawn_turtlebotPtr.asFunction<void Function(int)>();
 
-  void wire_send_to_turtlebot(
-    int port_,
-    ffi.Pointer<wire_Command> command,
-  ) {
-    return _wire_send_to_turtlebot(
-      port_,
-      command,
-    );
-  }
-
-  late final _wire_send_to_turtlebotPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Void Function(
-              ffi.Int64, ffi.Pointer<wire_Command>)>>('wire_send_to_turtlebot');
-  late final _wire_send_to_turtlebot = _wire_send_to_turtlebotPtr
-      .asFunction<void Function(int, ffi.Pointer<wire_Command>)>();
-
-  void wire_open_port_command(
-    int port_,
-    ffi.Pointer<wire_uint_8_list> port,
-  ) {
-    return _wire_open_port_command(
-      port_,
-      port,
-    );
-  }
-
-  late final _wire_open_port_commandPtr = _lookup<
-      ffi.NativeFunction<
-          ffi.Void Function(ffi.Int64,
-              ffi.Pointer<wire_uint_8_list>)>>('wire_open_port_command');
-  late final _wire_open_port_command = _wire_open_port_commandPtr
-      .asFunction<void Function(int, ffi.Pointer<wire_uint_8_list>)>();
-
   void wire_receive_from_turtlebot(
     int port_,
   ) {
@@ -660,15 +618,55 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
   late final _wire_receive_from_turtlebot =
       _wire_receive_from_turtlebotPtr.asFunction<void Function(int)>();
 
-  ffi.Pointer<wire_Command> new_box_autoadd_command() {
-    return _new_box_autoadd_command();
+  void wire_open_port_command(
+    int port_,
+    ffi.Pointer<wire_uint_8_list> serial_port,
+  ) {
+    return _wire_open_port_command(
+      port_,
+      serial_port,
+    );
   }
 
-  late final _new_box_autoadd_commandPtr =
-      _lookup<ffi.NativeFunction<ffi.Pointer<wire_Command> Function()>>(
-          'new_box_autoadd_command');
-  late final _new_box_autoadd_command = _new_box_autoadd_commandPtr
-      .asFunction<ffi.Pointer<wire_Command> Function()>();
+  late final _wire_open_port_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_open_port_command');
+  late final _wire_open_port_command = _wire_open_port_commandPtr
+      .asFunction<void Function(int, ffi.Pointer<wire_uint_8_list>)>();
+
+  void wire_close_port_command(
+    int port_,
+  ) {
+    return _wire_close_port_command(
+      port_,
+    );
+  }
+
+  late final _wire_close_port_commandPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_close_port_command');
+  late final _wire_close_port_command =
+      _wire_close_port_commandPtr.asFunction<void Function(int)>();
+
+  void wire_base_control_command(
+    int port_,
+    int speed,
+    int radius,
+  ) {
+    return _wire_base_control_command(
+      port_,
+      speed,
+      radius,
+    );
+  }
+
+  late final _wire_base_control_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Int64, ffi.Uint16, ffi.Uint16)>>('wire_base_control_command');
+  late final _wire_base_control_command =
+      _wire_base_control_commandPtr.asFunction<void Function(int, int, int)>();
 
   ffi.Pointer<wire_uint_8_list> new_uint_8_list(
     int len,
@@ -721,17 +719,37 @@ class wire_uint_8_list extends ffi.Struct {
   external int len;
 }
 
-class wire_Command extends ffi.Struct {
-  external ffi.Pointer<wire_uint_8_list> ty;
-
-  external ffi.Pointer<wire_uint_8_list> opt;
-
-  external ffi.Pointer<wire_uint_8_list> payload;
-}
-
 typedef DartPostCObjectFnType = ffi.Pointer<
     ffi.NativeFunction<ffi.Uint8 Function(DartPort, ffi.Pointer<ffi.Void>)>>;
 typedef DartPort = ffi.Int64;
+
+const int CMD_LEN_BASE_CONTROL = 7;
+
+const int CMD_LEN_SOUND = 6;
+
+const int CMD_LEN_SOUND_SEQUENCE = 4;
+
+const int CMD_LEN_REQUEST_EXTRA = 5;
+
+const int CMD_LEN_GENERAL_PURPOSE_OUTPUT = 5;
+
+const int CMD_LEN_SET_CONTROLLER_GAIN = 16;
+
+const int CMD_LEN_GET_CONTROLLER_GAIN = 4;
+
+const int CMD_SIZE_BASE_CONTROL = 4;
+
+const int CMD_SIZE_SOUND = 3;
+
+const int CMD_SIZE_SOUND_SEQUENCE = 1;
+
+const int CMD_SIZE_REQUEST_EXTRA = 2;
+
+const int CMD_SIZE_GENERAL_PURPOSE_OUTPUT = 2;
+
+const int CMD_SIZE_SET_CONTROLLER_GAIN = 13;
+
+const int CMD_SIZE_GET_CONTROLLER_GAIN = 1;
 
 const int FDB_SIZE_BASIC_SENSOR_DATA = 15;
 

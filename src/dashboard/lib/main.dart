@@ -88,6 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
       debugPrint("Error: " + e.toString());
     });
 
-    await ttb.sendToTurtlebot();
+    // await ttb.sendToTurtlebot();
   }
 }
