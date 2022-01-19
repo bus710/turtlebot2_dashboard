@@ -166,10 +166,18 @@ impl Feedback {
     }
 }
 
-const SERIAL: &str = "kobuki";
+//
+#[derive(Debug, Clone)]
+pub struct Command {
+    pub ty: String,
+    pub opt: String,
+    pub payload: Vec<u8>,
+}
 
+// Keyword to find USB-Serial devices
+const SERIAL: &str = "kobuki";
 // Static channel to interact with turtlebot
-static SEND: OnceCell<crossbeam_channel::Sender<bool>> = OnceCell::new();
+static SEND: OnceCell<Arc<Mutex<crossbeam_channel::Sender<Command>>>> = OnceCell::new();
 // Static vector to store feedbacks from turtlebot
 static RECEIVE: OnceCell<Arc<Mutex<Vec<Feedback>>>> = OnceCell::new();
 
@@ -202,7 +210,8 @@ pub fn available_tutlebots() -> Result<Vec<String>> {
 pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
     // The global static SEND is used to send command to the turtlebot instance
     let (sender, receiver) = unbounded();
-    SEND.set(sender);
+    let sender_lock = Arc::new(Mutex::new(sender));
+    SEND.set(sender_lock);
 
     // The receiver is passed to the turtlebot instance so flutter can send command to turtlebot
     // The sink is passed to the turtlebot instance so it can actively send result to flutter
@@ -213,9 +222,23 @@ pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
     Ok(())
 }
 
-pub fn send_to_turtlebot() -> Result<()> {
-    let tx = SEND.get().unwrap();
-    tx.send(true);
+pub fn send_to_turtlebot(command: Command) -> Result<()> {
+    let tx_lock = SEND.get().unwrap();
+    let tx = tx_lock.lock().unwrap();
+    tx.send(command);
+    Ok(())
+}
+
+pub fn open_port_command(port: String) -> Result<()> {
+    let mut cmd = Command {
+        ty: "serial".to_string(),
+        opt: port,
+        payload: Vec::new(),
+    };
+    let tx_lock = SEND.get().unwrap();
+    let tx = tx_lock.lock().unwrap();
+    tx.send(cmd);
+
     Ok(())
 }
 

@@ -38,14 +38,32 @@ pub extern "C" fn wire_spawn_turtlebot(port_: i64) {
 }
 
 #[no_mangle]
-pub extern "C" fn wire_send_to_turtlebot(port_: i64) {
+pub extern "C" fn wire_send_to_turtlebot(port_: i64, command: *mut wire_Command) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "send_to_turtlebot",
             port: Some(port_),
             mode: FfiCallMode::Normal,
         },
-        move || move |task_callback| send_to_turtlebot(),
+        move || {
+            let api_command = command.wire2api();
+            move |task_callback| send_to_turtlebot(api_command)
+        },
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_open_port_command(port_: i64, port: *mut wire_uint_8_list) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "open_port_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_port = port.wire2api();
+            move |task_callback| open_port_command(api_port)
+        },
     )
 }
 
@@ -63,9 +81,38 @@ pub extern "C" fn wire_receive_from_turtlebot(port_: i64) {
 
 // Section: wire structs
 
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_Command {
+    ty: *mut wire_uint_8_list,
+    opt: *mut wire_uint_8_list,
+    payload: *mut wire_uint_8_list,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_uint_8_list {
+    ptr: *mut u8,
+    len: i32,
+}
+
 // Section: wire enums
 
 // Section: allocate functions
+
+#[no_mangle]
+pub extern "C" fn new_box_autoadd_command() -> *mut wire_Command {
+    support::new_leak_box_ptr(wire_Command::new_with_null_ptr())
+}
+
+#[no_mangle]
+pub extern "C" fn new_uint_8_list(len: i32) -> *mut wire_uint_8_list {
+    let ans = wire_uint_8_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
 
 // Section: impl Wire2Api
 
@@ -86,6 +133,45 @@ where
     }
 }
 
+impl Wire2Api<String> for *mut wire_uint_8_list {
+    fn wire2api(self) -> String {
+        let vec: Vec<u8> = self.wire2api();
+        String::from_utf8_lossy(&vec).into_owned()
+    }
+}
+
+impl Wire2Api<Command> for *mut wire_Command {
+    fn wire2api(self) -> Command {
+        let wrap = unsafe { support::box_from_leak_ptr(self) };
+        (*wrap).wire2api().into()
+    }
+}
+
+impl Wire2Api<Command> for wire_Command {
+    fn wire2api(self) -> Command {
+        Command {
+            ty: self.ty.wire2api(),
+            opt: self.opt.wire2api(),
+            payload: self.payload.wire2api(),
+        }
+    }
+}
+
+impl Wire2Api<u8> for u8 {
+    fn wire2api(self) -> u8 {
+        self
+    }
+}
+
+impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
+    fn wire2api(self) -> Vec<u8> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
+        }
+    }
+}
+
 // Section: impl NewWithNullPtr
 
 pub trait NewWithNullPtr {
@@ -95,6 +181,16 @@ pub trait NewWithNullPtr {
 impl<T> NewWithNullPtr for *mut T {
     fn new_with_null_ptr() -> Self {
         std::ptr::null_mut()
+    }
+}
+
+impl NewWithNullPtr for wire_Command {
+    fn new_with_null_ptr() -> Self {
+        Self {
+            ty: core::ptr::null_mut(),
+            opt: core::ptr::null_mut(),
+            payload: core::ptr::null_mut(),
+        }
     }
 }
 

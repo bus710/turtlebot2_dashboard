@@ -43,7 +43,7 @@ pub const FDB_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 16;
 pub const FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER: u8 = 12;
 pub const FDB_SIZE_CONTROLLER_INFO: u8 = 13;
 
-// decode buffer => packets => feedbacks
+// decode (buffer => packets => feedbacks)
 pub fn decode(buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feedback>, Vec<u8>)> {
     // Check if the length if enough.
     // The min length is 70.
@@ -196,132 +196,132 @@ fn format_feedback(packet: &Vec<u8>) -> Result<Feedback> {
             }
             Some(FeedbackId::DockingIR) => {
                 f.docking_ir.valid = true;
-                f.docking_ir.right_signal = packet[2 + index as usize];
-                f.docking_ir.central_signal = packet[3 + index as usize];
-                f.docking_ir.left_signal = packet[4 + index as usize];
+                f.docking_ir.right_signal = packet[2 + index as usize] as u32;
+                f.docking_ir.central_signal = packet[3 + index as usize] as u32;
+                f.docking_ir.left_signal = packet[4 + index as usize] as u32;
                 index += FDB_SIZE_DOCKING_IR + 2;
             }
             Some(FeedbackId::InertialSensor) => {
                 f.inertial_sensor.valid = true;
-                f.inertial_sensor.angle = packet[2 + index as usize] as u16;
-                f.inertial_sensor.angle |= (packet[3 + index as usize] as u16).shl(8);
-                f.inertial_sensor.angle_rate = packet[4 + index as usize] as u16;
-                f.inertial_sensor.angle_rate |= (packet[5 + index as usize] as u16).shl(8);
+                f.inertial_sensor.angle = packet[2 + index as usize] as u32;
+                f.inertial_sensor.angle |= (packet[3 + index as usize] as u32) << 8;
+                f.inertial_sensor.angle_rate = packet[4 + index as usize] as u32;
+                f.inertial_sensor.angle_rate |= (packet[5 + index as usize] as u32) << 8;
                 index += FDB_SIZE_INERTIAL_SENSOR + 2;
             }
             Some(FeedbackId::Cliff) => {
                 f.cliff.valid = true;
-                f.cliff.right_cliff_sensor = packet[2 + index as usize] as u16;
-                f.cliff.right_cliff_sensor |= (packet[3 + index as usize] as u16).shl(8);
-                f.cliff.central_cliff_sensor = packet[4 + index as usize] as u16;
-                f.cliff.central_cliff_sensor |= (packet[5 + index as usize] as u16).shl(8);
-                f.cliff.left_cliff_sensor = packet[6 + index as usize] as u16;
-                f.cliff.left_cliff_sensor |= (packet[7 + index as usize] as u16).shl(8);
+                f.cliff.right_cliff_sensor = packet[2 + index as usize] as u32;
+                f.cliff.right_cliff_sensor |= (packet[3 + index as usize] as u32) << 8;
+                f.cliff.central_cliff_sensor = packet[4 + index as usize] as u32;
+                f.cliff.central_cliff_sensor |= (packet[5 + index as usize] as u32) << 8;
+                f.cliff.left_cliff_sensor = packet[6 + index as usize] as u32;
+                f.cliff.left_cliff_sensor |= (packet[7 + index as usize] as u32) << 8;
                 index += FDB_SIZE_CLIFF + 2;
             }
             Some(FeedbackId::Current) => {
                 f.current.valid = true;
-                f.current.left_motor = packet[2 + index as usize];
-                f.current.right_motor = packet[3 + index as usize];
+                f.current.left_motor = packet[2 + index as usize] as u32;
+                f.current.right_motor = packet[3 + index as usize] as u32;
                 index += FDB_SIZE_CURRENT + 2;
             }
             Some(FeedbackId::HardwareVersion) => {
                 f.hardware_version.valid = true;
-                f.hardware_version.patch = packet[2 + index as usize];
-                f.hardware_version.minor = packet[3 + index as usize];
-                f.hardware_version.major = packet[4 + index as usize];
+                f.hardware_version.patch = packet[2 + index as usize] as u32;
+                f.hardware_version.minor = packet[3 + index as usize] as u32;
+                f.hardware_version.major = packet[4 + index as usize] as u32;
                 index += FDB_SIZE_HARDWARE_VERSION + 2;
             }
             Some(FeedbackId::FirmwareVersion) => {
                 f.firmware_version.valid = true;
-                f.firmware_version.patch = packet[2 + index as usize];
-                f.firmware_version.minor = packet[3 + index as usize];
-                f.firmware_version.major = packet[4 + index as usize];
+                f.firmware_version.patch = packet[2 + index as usize] as u32;
+                f.firmware_version.minor = packet[3 + index as usize] as u32;
+                f.firmware_version.major = packet[4 + index as usize] as u32;
                 index += FDB_SIZE_FIRMWARE_VERSION + 2;
             }
             Some(FeedbackId::RawDataOf3AxisGyro) => {
                 f.gyro.valid = true;
-                f.gyro.frame_id = packet[2 + index as usize];
-                f.gyro.followed_data_length = packet[3 + index as usize];
+                f.gyro.frame_id = packet[2 + index as usize] as u32;
+                f.gyro.followed_data_length = packet[3 + index as usize] as u32;
                 //
-                f.gyro.raw_gyro_data[0].x = packet[4 + index as usize] as u16;
-                f.gyro.raw_gyro_data[0].x |= (packet[5 + index as usize] as u16).shl(8);
-                f.gyro.raw_gyro_data[0].y = packet[6 + index as usize] as u16;
-                f.gyro.raw_gyro_data[0].y |= (packet[7 + index as usize] as u16).shl(8);
-                f.gyro.raw_gyro_data[0].z = packet[8 + index as usize] as u16;
-                f.gyro.raw_gyro_data[0].z |= (packet[9 + index as usize] as u16).shl(8);
+                f.gyro.x0 = packet[4 + index as usize] as u32;
+                f.gyro.x0 |= (packet[5 + index as usize] as u32) << 8;
+                f.gyro.y0 = packet[6 + index as usize] as u32;
+                f.gyro.y0 |= (packet[7 + index as usize] as u32) << 8;
+                f.gyro.z0 = packet[8 + index as usize] as u32;
+                f.gyro.z0 |= (packet[9 + index as usize] as u32) << 8;
                 //
-                f.gyro.raw_gyro_data[1].x = packet[10 + index as usize] as u16;
-                f.gyro.raw_gyro_data[1].x |= (packet[11 + index as usize] as u16).shl(8);
-                f.gyro.raw_gyro_data[1].y = packet[12 + index as usize] as u16;
-                f.gyro.raw_gyro_data[1].y |= (packet[13 + index as usize] as u16).shl(8);
-                f.gyro.raw_gyro_data[1].z = packet[14 + index as usize] as u16;
-                f.gyro.raw_gyro_data[1].z |= (packet[15 + index as usize] as u16).shl(8);
+                f.gyro.x1 = packet[4 + index as usize] as u32;
+                f.gyro.x1 |= (packet[5 + index as usize] as u32) << 8;
+                f.gyro.y1 = packet[6 + index as usize] as u32;
+                f.gyro.y1 |= (packet[7 + index as usize] as u32) << 8;
+                f.gyro.z1 = packet[8 + index as usize] as u32;
+                f.gyro.z1 |= (packet[9 + index as usize] as u32) << 8;
                 //
                 if packet[1 + index as usize] == FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A {
                     index += FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A + 2;
                 } else if packet[1 + index as usize] == FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B {
-                    f.gyro.raw_gyro_data[2].x = packet[16 + index as usize] as u16;
-                    f.gyro.raw_gyro_data[2].x |= (packet[17 + index as usize] as u16).shl(8);
-                    f.gyro.raw_gyro_data[2].y = packet[18 + index as usize] as u16;
-                    f.gyro.raw_gyro_data[2].y |= (packet[19 + index as usize] as u16).shl(8);
-                    f.gyro.raw_gyro_data[2].z = packet[20 + index as usize] as u16;
-                    f.gyro.raw_gyro_data[2].z |= (packet[21 + index as usize] as u16).shl(8);
+                    f.gyro.x2 = packet[4 + index as usize] as u32;
+                    f.gyro.x2 |= (packet[5 + index as usize] as u32) << 8;
+                    f.gyro.y2 = packet[6 + index as usize] as u32;
+                    f.gyro.y2 |= (packet[7 + index as usize] as u32) << 8;
+                    f.gyro.z2 = packet[8 + index as usize] as u32;
+                    f.gyro.z2 |= (packet[9 + index as usize] as u32) << 8;
                     index += FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B + 2;
                 }
             }
             Some(FeedbackId::GeneralPurposeInput) => {
                 f.general_purpose_input.valid = true;
-                f.general_purpose_input.d_ch0 = packet[2 + index as usize] as u16;
-                f.general_purpose_input.d_ch0 |= (packet[3 + index as usize] as u16).shl(8);
+                f.general_purpose_input.d_ch0 = packet[2 + index as usize] as u32;
+                f.general_purpose_input.d_ch0 |= (packet[3 + index as usize] as u32) << 8;
                 //
-                f.general_purpose_input.a_ch0 = packet[4 + index as usize] as u16;
-                f.general_purpose_input.a_ch0 |= (packet[5 + index as usize] as u16).shl(8);
+                f.general_purpose_input.a_ch0 = packet[4 + index as usize] as u32;
+                f.general_purpose_input.a_ch0 |= (packet[5 + index as usize] as u32) << 8;
                 //
-                f.general_purpose_input.a_ch1 = packet[6 + index as usize] as u16;
-                f.general_purpose_input.a_ch1 |= (packet[7 + index as usize] as u16).shl(8);
+                f.general_purpose_input.a_ch1 = packet[6 + index as usize] as u32;
+                f.general_purpose_input.a_ch1 |= (packet[7 + index as usize] as u32) << 8;
                 //
-                f.general_purpose_input.a_ch2 = packet[8 + index as usize] as u16;
-                f.general_purpose_input.a_ch2 |= (packet[9 + index as usize] as u16).shl(8);
+                f.general_purpose_input.a_ch2 = packet[8 + index as usize] as u32;
+                f.general_purpose_input.a_ch2 |= (packet[9 + index as usize] as u32) << 8;
                 //
-                f.general_purpose_input.a_ch3 = packet[10 + index as usize] as u16;
-                f.general_purpose_input.a_ch3 |= (packet[11 + index as usize] as u16).shl(8);
+                f.general_purpose_input.a_ch3 = packet[10 + index as usize] as u32;
+                f.general_purpose_input.a_ch3 |= (packet[11 + index as usize] as u32) << 8;
                 index += FDB_SIZE_GENERAL_PURPOSE_OUTPUT + 2;
             }
             Some(FeedbackId::UniqueDeviceId) => {
                 f.unique_device_id.valid = true;
                 f.unique_device_id.udid0 = packet[2 + index as usize] as u32;
-                f.unique_device_id.udid0 |= (packet[3 + index as usize] as u32).shl(8);
-                f.unique_device_id.udid0 |= (packet[4 + index as usize] as u32).shl(16);
-                f.unique_device_id.udid0 |= (packet[5 + index as usize] as u32).shl(24);
+                f.unique_device_id.udid0 |= (packet[3 + index as usize] as u32) << 8;
+                f.unique_device_id.udid0 |= (packet[4 + index as usize] as u32) << 16;
+                f.unique_device_id.udid0 |= (packet[5 + index as usize] as u32) << 24;
                 //
                 f.unique_device_id.udid1 = packet[6 + index as usize] as u32;
-                f.unique_device_id.udid1 |= (packet[7 + index as usize] as u32).shl(8);
-                f.unique_device_id.udid1 |= (packet[8 + index as usize] as u32).shl(16);
-                f.unique_device_id.udid1 |= (packet[9 + index as usize] as u32).shl(24);
+                f.unique_device_id.udid1 |= (packet[7 + index as usize] as u32) << 8;
+                f.unique_device_id.udid1 |= (packet[8 + index as usize] as u32) << 16;
+                f.unique_device_id.udid1 |= (packet[9 + index as usize] as u32) << 24;
                 //
                 f.unique_device_id.udid2 = packet[10 + index as usize] as u32;
-                f.unique_device_id.udid2 |= (packet[11 + index as usize] as u32).shl(8);
-                f.unique_device_id.udid2 |= (packet[12 + index as usize] as u32).shl(16);
-                f.unique_device_id.udid2 |= (packet[13 + index as usize] as u32).shl(24);
+                f.unique_device_id.udid2 |= (packet[11 + index as usize] as u32) << 8;
+                f.unique_device_id.udid2 |= (packet[12 + index as usize] as u32) << 16;
+                f.unique_device_id.udid2 |= (packet[13 + index as usize] as u32) << 24;
                 index += FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER + 2;
             }
             Some(FeedbackId::ControllerInfo) => {
                 f.controller_info.valid = true;
                 f.controller_info.p_gain = packet[2 + index as usize] as u32;
-                f.controller_info.p_gain |= (packet[3 + index as usize] as u32).shl(8);
-                f.controller_info.p_gain |= (packet[4 + index as usize] as u32).shl(16);
-                f.controller_info.p_gain |= (packet[5 + index as usize] as u32).shl(24);
+                f.controller_info.p_gain |= (packet[3 + index as usize] as u32) << 8;
+                f.controller_info.p_gain |= (packet[4 + index as usize] as u32) << 16;
+                f.controller_info.p_gain |= (packet[5 + index as usize] as u32) << 24;
                 //
                 f.controller_info.i_gain = packet[6 + index as usize] as u32;
-                f.controller_info.i_gain |= (packet[7 + index as usize] as u32).shl(8);
-                f.controller_info.i_gain |= (packet[8 + index as usize] as u32).shl(16);
-                f.controller_info.i_gain |= (packet[9 + index as usize] as u32).shl(24);
+                f.controller_info.i_gain |= (packet[7 + index as usize] as u32) << 8;
+                f.controller_info.i_gain |= (packet[8 + index as usize] as u32) << 16;
+                f.controller_info.i_gain |= (packet[9 + index as usize] as u32) << 24;
                 //
                 f.controller_info.d_gain = packet[10 + index as usize] as u32;
-                f.controller_info.d_gain |= (packet[11 + index as usize] as u32).shl(8);
-                f.controller_info.d_gain |= (packet[12 + index as usize] as u32).shl(16);
-                f.controller_info.d_gain |= (packet[13 + index as usize] as u32).shl(24);
+                f.controller_info.d_gain |= (packet[11 + index as usize] as u32) << 8;
+                f.controller_info.d_gain |= (packet[12 + index as usize] as u32) << 16;
+                f.controller_info.d_gain |= (packet[13 + index as usize] as u32) << 24;
                 index += FDB_SIZE_CONTROLLER_INFO + 2;
             }
             _ => {
@@ -343,13 +343,13 @@ fn get_epoch_ms() -> String {
 
 #[derive(Clone)]
 pub struct Turtlebot {
-    receiver: crossbeam_channel::Receiver<bool>,
+    receiver: crossbeam_channel::Receiver<Command>,
     sink: StreamSink<String>,
     // feedbacks: Vec<Feedback>,
 }
 
 impl Turtlebot {
-    pub fn new(rx: crossbeam_channel::Receiver<bool>, sk: StreamSink<String>) -> Turtlebot {
+    pub fn new(rx: crossbeam_channel::Receiver<Command>, sk: StreamSink<String>) -> Turtlebot {
         Turtlebot {
             receiver: rx,
             sink: sk,
@@ -367,7 +367,10 @@ pub struct TurtlebotRunner {
 }
 
 impl TurtlebotRunner {
-    pub fn new(rx: crossbeam_channel::Receiver<bool>, sk: StreamSink<String>) -> TurtlebotRunner {
+    pub fn new(
+        rx: crossbeam_channel::Receiver<Command>,
+        sk: StreamSink<String>,
+    ) -> TurtlebotRunner {
         let ttb_lock = Turtlebot::new(rx, sk);
         TurtlebotRunner {
             turtlebot_lock: Arc::new(Mutex::new(ttb_lock)),

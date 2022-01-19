@@ -16,7 +16,9 @@ abstract class Turtlebot2 {
 
   Stream<String> spawnTurtlebot({dynamic hint});
 
-  Future<void> sendToTurtlebot({dynamic hint});
+  Future<void> sendToTurtlebot({required Command command, dynamic hint});
+
+  Future<void> openPortCommand({required String port, dynamic hint});
 
   Future<List<Feedback>> receiveFromTurtlebot({dynamic hint});
 }
@@ -67,6 +69,18 @@ class Cliff {
   });
 }
 
+class Command {
+  final String ty;
+  final String opt;
+  final Uint8List payload;
+
+  Command({
+    required this.ty,
+    required this.opt,
+    required this.payload,
+  });
+}
+
 class ControllerInfo {
   final bool valid;
   final int isUserConfigured;
@@ -110,7 +124,7 @@ class DockingIR {
 }
 
 class Feedback {
-  final int epochTimeStamp;
+  final String epochTimeStamp;
   final BasicSensor basicSensor;
   final DockingIR dockingIr;
   final InertialSensor inertialSensor;
@@ -272,15 +286,29 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
         hint: hint,
       ));
 
-  Future<void> sendToTurtlebot({dynamic hint}) =>
+  Future<void> sendToTurtlebot({required Command command, dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
-        callFfi: (port) => inner.wire_send_to_turtlebot(port),
+        callFfi: (port) => inner.wire_send_to_turtlebot(
+            port, _api2wire_box_autoadd_command(command)),
         parseSuccessData: _wire2api_unit,
         constMeta: const FlutterRustBridgeTaskConstMeta(
           debugName: "send_to_turtlebot",
-          argNames: [],
+          argNames: ["command"],
         ),
-        argValues: [],
+        argValues: [command],
+        hint: hint,
+      ));
+
+  Future<void> openPortCommand({required String port, dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) =>
+            inner.wire_open_port_command(port, _api2wire_String(port)),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "open_port_command",
+          argNames: ["port"],
+        ),
+        argValues: [port],
         hint: hint,
       ));
 
@@ -297,9 +325,38 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
       ));
 
   // Section: api2wire
+  ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
+    return _api2wire_uint_8_list(utf8.encoder.convert(raw));
+  }
+
+  ffi.Pointer<wire_Command> _api2wire_box_autoadd_command(Command raw) {
+    final ptr = inner.new_box_autoadd_command();
+    _api_fill_to_wire_command(raw, ptr.ref);
+    return ptr;
+  }
+
+  int _api2wire_u8(int raw) {
+    return raw;
+  }
+
+  ffi.Pointer<wire_uint_8_list> _api2wire_uint_8_list(Uint8List raw) {
+    final ans = inner.new_uint_8_list(raw.length);
+    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
+    return ans;
+  }
 
   // Section: api_fill_to_wire
 
+  void _api_fill_to_wire_box_autoadd_command(
+      Command apiObj, ffi.Pointer<wire_Command> wireObj) {
+    _api_fill_to_wire_command(apiObj, wireObj.ref);
+  }
+
+  void _api_fill_to_wire_command(Command apiObj, wire_Command wireObj) {
+    wireObj.ty = _api2wire_String(apiObj.ty);
+    wireObj.opt = _api2wire_String(apiObj.opt);
+    wireObj.payload = _api2wire_uint_8_list(apiObj.payload);
+  }
 }
 
 // Section: wire2api
@@ -389,7 +446,7 @@ Feedback _wire2api_feedback(dynamic raw) {
   if (arr.length != 12)
     throw Exception('unexpected arr length: expect 12 but see ${arr.length}');
   return Feedback(
-    epochTimeStamp: _wire2api_i32(arr[0]),
+    epochTimeStamp: _wire2api_String(arr[0]),
     basicSensor: _wire2api_basic_sensor(arr[1]),
     dockingIr: _wire2api_docking_ir(arr[2]),
     inertialSensor: _wire2api_inertial_sensor(arr[3]),
@@ -460,10 +517,6 @@ HardwareVersion _wire2api_hardware_version(dynamic raw) {
     minor: _wire2api_u32(arr[2]),
     major: _wire2api_u32(arr[3]),
   );
-}
-
-int _wire2api_i32(dynamic raw) {
-  return raw as int;
 }
 
 InertialSensor _wire2api_inertial_sensor(dynamic raw) {
@@ -561,17 +614,37 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
 
   void wire_send_to_turtlebot(
     int port_,
+    ffi.Pointer<wire_Command> command,
   ) {
     return _wire_send_to_turtlebot(
       port_,
+      command,
     );
   }
 
-  late final _wire_send_to_turtlebotPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
-          'wire_send_to_turtlebot');
-  late final _wire_send_to_turtlebot =
-      _wire_send_to_turtlebotPtr.asFunction<void Function(int)>();
+  late final _wire_send_to_turtlebotPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Int64, ffi.Pointer<wire_Command>)>>('wire_send_to_turtlebot');
+  late final _wire_send_to_turtlebot = _wire_send_to_turtlebotPtr
+      .asFunction<void Function(int, ffi.Pointer<wire_Command>)>();
+
+  void wire_open_port_command(
+    int port_,
+    ffi.Pointer<wire_uint_8_list> port,
+  ) {
+    return _wire_open_port_command(
+      port_,
+      port,
+    );
+  }
+
+  late final _wire_open_port_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_open_port_command');
+  late final _wire_open_port_command = _wire_open_port_commandPtr
+      .asFunction<void Function(int, ffi.Pointer<wire_uint_8_list>)>();
 
   void wire_receive_from_turtlebot(
     int port_,
@@ -586,6 +659,31 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
           'wire_receive_from_turtlebot');
   late final _wire_receive_from_turtlebot =
       _wire_receive_from_turtlebotPtr.asFunction<void Function(int)>();
+
+  ffi.Pointer<wire_Command> new_box_autoadd_command() {
+    return _new_box_autoadd_command();
+  }
+
+  late final _new_box_autoadd_commandPtr =
+      _lookup<ffi.NativeFunction<ffi.Pointer<wire_Command> Function()>>(
+          'new_box_autoadd_command');
+  late final _new_box_autoadd_command = _new_box_autoadd_commandPtr
+      .asFunction<ffi.Pointer<wire_Command> Function()>();
+
+  ffi.Pointer<wire_uint_8_list> new_uint_8_list(
+    int len,
+  ) {
+    return _new_uint_8_list(
+      len,
+    );
+  }
+
+  late final _new_uint_8_listPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_uint_8_list> Function(
+              ffi.Int32)>>('new_uint_8_list');
+  late final _new_uint_8_list = _new_uint_8_listPtr
+      .asFunction<ffi.Pointer<wire_uint_8_list> Function(int)>();
 
   void free_WireSyncReturnStruct(
     WireSyncReturnStruct val,
@@ -616,6 +714,45 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
       .asFunction<void Function(DartPostCObjectFnType)>();
 }
 
+class wire_uint_8_list extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @ffi.Int32()
+  external int len;
+}
+
+class wire_Command extends ffi.Struct {
+  external ffi.Pointer<wire_uint_8_list> ty;
+
+  external ffi.Pointer<wire_uint_8_list> opt;
+
+  external ffi.Pointer<wire_uint_8_list> payload;
+}
+
 typedef DartPostCObjectFnType = ffi.Pointer<
     ffi.NativeFunction<ffi.Uint8 Function(DartPort, ffi.Pointer<ffi.Void>)>>;
 typedef DartPort = ffi.Int64;
+
+const int FDB_SIZE_BASIC_SENSOR_DATA = 15;
+
+const int FDB_SIZE_DOCKING_IR = 3;
+
+const int FDB_SIZE_INERTIAL_SENSOR = 7;
+
+const int FDB_SIZE_CLIFF = 6;
+
+const int FDB_SIZE_CURRENT = 2;
+
+const int FDB_SIZE_HARDWARE_VERSION = 4;
+
+const int FDB_SIZE_FIRMWARE_VERSION = 4;
+
+const int FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A = 14;
+
+const int FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B = 20;
+
+const int FDB_SIZE_GENERAL_PURPOSE_OUTPUT = 16;
+
+const int FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER = 12;
+
+const int FDB_SIZE_CONTROLLER_INFO = 13;

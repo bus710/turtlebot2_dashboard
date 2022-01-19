@@ -65,7 +65,7 @@ term_color_white () {
 
 byebye () {
     term_color_green
-    printf "READY under dashboard/dlib"
+    printf "READY (dashboard/dlib)"
     term_color_white
 }
 
