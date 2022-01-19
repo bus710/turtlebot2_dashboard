@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::{anyhow, Error, Result};
+use crossbeam_channel as crossbeam;
 use flutter_rust_bridge::StreamSink;
 
 use crate::api::*;
@@ -374,17 +375,21 @@ fn get_epoch_ms() -> String {
 
 #[derive(Clone)]
 pub struct Turtlebot {
-    receiver: crossbeam_channel::Receiver<Command>,
+    receiver: crossbeam::Receiver<Command>,
     sink: StreamSink<String>,
     feedbacks: Vec<Feedback>,
+    current_port: String,
+    current_port_opened: bool,
 }
 
 impl Turtlebot {
-    pub fn new(rx: crossbeam_channel::Receiver<Command>, sk: StreamSink<String>) -> Turtlebot {
+    pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> Turtlebot {
         Turtlebot {
             receiver: rx,
             sink: sk,
             feedbacks: Vec::new(),
+            current_port: "".to_string(),
+            current_port_opened: false,
         }
     }
     pub fn open(&mut self) {}
@@ -398,10 +403,7 @@ pub struct TurtlebotRunner {
 }
 
 impl TurtlebotRunner {
-    pub fn new(
-        rx: crossbeam_channel::Receiver<Command>,
-        sk: StreamSink<String>,
-    ) -> TurtlebotRunner {
+    pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> TurtlebotRunner {
         let ttb_lock = Turtlebot::new(rx, sk);
         TurtlebotRunner {
             turtlebot_lock: Arc::new(Mutex::new(ttb_lock)),
@@ -412,18 +414,18 @@ impl TurtlebotRunner {
         // Get the mutex
         let ttb_lock = self.turtlebot_lock.clone();
         //
-        let ticker = crossbeam_channel::tick(Duration::from_millis(1000));
+        let ticker = crossbeam::tick(Duration::from_millis(1000));
         // Thread body
         thread::spawn(move || {
             // Unlock the mutex
             let mut ttb = ttb_lock.lock().unwrap();
             // Enter the loop
             loop {
-                crossbeam_channel::select! {
-                    recv(ttb.receiver) -> v =>{
-                        match v{
-                            Ok(vv) => {
-                                eprintln!("from Rust thread - {:?}", vv);
+                crossbeam::select! {
+                    recv(ttb.receiver) -> cmd =>{
+                        match cmd{
+                            Ok(cmd_) => {
+                                eprintln!("from Rust thread - {:?}", cmd_);
                                 ttb.open();
                                 ttb.close();
                                 ttb.read();
@@ -431,6 +433,20 @@ impl TurtlebotRunner {
                                 let f = Feedback::new();
                                 let mut ff = Vec::new();
                                 ff.push(f);
+                                //
+                                match cmd_.ty{
+                                    CommandId::SerialControl => {
+                                        if cmd_.serial_command == "open" && !ttb.current_port_opened{
+                                            ttb.current_port_opened = true;
+
+                                        } else if cmd_.serial_command == "close" && ttb.current_port_opened {
+                                            ttb.current_port_opened = false;
+                                        }
+                                    },
+                                    CommandId::BaseControl=> {},
+                                    _ => {}
+                                }
+                                eprintln!("serial command requested - port state: {:?}", ttb.current_port_opened);
                             },
                             Err (e) => {
                                 eprintln!("{:?}", e);

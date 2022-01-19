@@ -89,5 +89,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     // await ttb.sendToTurtlebot();
+    await ttb.openPortCommand(serialPort: "aaa");
   }
 }
