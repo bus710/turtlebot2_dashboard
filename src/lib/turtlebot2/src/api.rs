@@ -221,7 +221,7 @@ pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
         return Ok(fbd.clone());
     }
 
-    Err(anyhow!(""))
+    Err(anyhow!("What feedback?"))
 }
 
 pub fn open_port_command(serial_port: String) -> Result<()> {

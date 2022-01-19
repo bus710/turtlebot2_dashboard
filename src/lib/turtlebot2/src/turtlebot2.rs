@@ -411,6 +411,8 @@ impl TurtlebotRunner {
     pub fn run(&mut self) {
         // Get the mutex
         let ttb_lock = self.turtlebot_lock.clone();
+        //
+        let ticker = crossbeam_channel::tick(Duration::from_millis(1000));
         // Thread body
         thread::spawn(move || {
             // Unlock the mutex
@@ -435,9 +437,12 @@ impl TurtlebotRunner {
                             },
                         }
                     }
+                    recv(ticker)-> _ => {
+                        eprintln!("Ticker running");
+                    }
                 }
-                ttb.sink.add("a".to_string());
-                thread::sleep(Duration::from_millis(10));
+                // ttb.sink.add("a".to_string());
+                // thread::sleep(Duration::from_millis(10));
             }
         });
     }
