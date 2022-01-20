@@ -171,8 +171,6 @@ pub struct Command {
 const SERIAL: &str = "kobuki";
 // Static channel to interact with turtlebot
 static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();
-// Static vector to store feedbacks from turtlebot
-static RECEIVE: OnceCell<Arc<Mutex<Vec<Feedback>>>> = OnceCell::new();
 
 pub fn available_tutlebots() -> Result<Vec<String>> {
     let ports = serialport::available_ports()?;
@@ -216,12 +214,11 @@ pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
 }
 
 pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
-    let fbd_lock = RECEIVE.get().unwrap();
-    let fbd = fbd_lock.lock().unwrap();
-    if fbd.len() > 0 {
-        return Ok(fbd.clone());
+    let feedbacks = receive();
+    match feedbacks {
+        Ok(f) => Ok(f),
+        Err(_) => Err(anyhow!("What feedback?")),
     }
-    Err(anyhow!("What feedback?"))
 }
 
 pub fn open_port_command(serial_port: String) -> Result<()> {

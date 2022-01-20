@@ -9,6 +9,7 @@ use std::{
 use anyhow::{anyhow, Error, Result};
 use crossbeam_channel as crossbeam;
 use flutter_rust_bridge::StreamSink;
+use once_cell::sync::OnceCell;
 use serialport::{SerialPort, UsbPortInfo};
 
 use crate::api::*;
@@ -374,6 +375,9 @@ fn get_epoch_ms() -> String {
         .to_string()
 }
 
+// Static vector to store feedbacks from turtlebot
+static RECEIVE: OnceCell<Arc<Mutex<Vec<Feedback>>>> = OnceCell::new();
+
 #[derive(Clone)]
 pub struct TurtlebotData {
     receiver: crossbeam::Receiver<Command>,
@@ -412,12 +416,12 @@ impl TurtlebotData {
                     let tx = self.serial_tx.clone();
                     let rx = self.serial_rx.clone();
                     thread::spawn(move || {
+                        // Ticker to periodically read a port if opened
+                        let ticker = crossbeam::tick(Duration::from_millis(64));
                         let serial_port_name = cmd.serial_port_name.clone();
                         let port_b = serialport::new(serial_port_name.clone(), 115_200).open();
-                        // Ticker to read a port if opened
-                        let ticker = crossbeam::tick(Duration::from_millis(1000));
                         match port_b {
-                            Ok(p) => {
+                            Ok(mut p) => {
                                 // Need to send
                                 tx.send(Command {
                                     ty: CommandId::SerialControl,
@@ -425,22 +429,44 @@ impl TurtlebotData {
                                     serial_port_name: serial_port_name.clone(),
                                     payload: Vec::new(),
                                 });
+
+                                let mut buffer = [0; 4096];
+                                let mut residue = Vec::new();
+
                                 loop {
                                     crossbeam::select! {
                                         recv(rx) -> cmd => {
                                             let c = cmd.unwrap();
                                             if c.serial_command == "close" {
-                                                // eprintln!("close");
-                                                // drop(port);
-                                                // self.current_port_opened = false;
-                                                // self.current_port_name = "".to_string();
+                                                tx.send(Command {
+                                                    ty: CommandId::SerialControl,
+                                                    serial_command: "closed".to_string(),
+                                                    serial_port_name: serial_port_name.clone(),
+                                                    payload: Vec::new(),
+                                                });
                                                 break;
                                             }
                                         }
                                         recv(ticker)-> _ => {
-                                            eprintln!("tick");
                                             // ttb_data.sink.add("a".to_string());
                                             // thread::sleep(Duration::from_millis(10));
+                                            let len = p.read(&mut buffer).expect("Read failed");
+                                            let d = decode(&buffer[..len], &residue);
+                                            match d {
+                                                Ok(v) => {
+                                                    let(mut f, r) = v;
+                                                    // store_from_turtlebot(f);
+                                                    let fdb_lock = RECEIVE.get().unwrap();
+                                                    let mut fdb = fdb_lock.lock().unwrap();
+                                                    fdb.append(&mut f);
+                                                    let fdb_locak = Arc::new(Mutex::new(fdb));
+                                                    RECEIVE.set(fdb_lock.clone());
+                                                    residue = r;
+                                                }
+                                                Err(e) => {
+                                                    // eprintln!("Error - {:?}", e);
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -450,14 +476,10 @@ impl TurtlebotData {
                             }
                         }
                     });
-
-                    // port.set_timeout(Duration::from_millis(1024));
-                    // self.current_port_opened = true;
-                    // self.current_port_name = port.name().unwrap().clone();
                 }
             }
             _ => {
-                self.command_handler(cmd);
+                self.ttb_tx.send(cmd);
             }
         }
     }
@@ -473,6 +495,10 @@ pub struct Turtlebot {
 
 impl Turtlebot {
     pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> Turtlebot {
+        //
+        let feedback_lock = Arc::new(Mutex::new(Vec::new()));
+        RECEIVE.set(feedback_lock);
+        //
         let ttb_data = TurtlebotData::new(rx, sk);
         Turtlebot {
             turtlebot_lock: Arc::new(Mutex::new(ttb_data)),
@@ -501,6 +527,10 @@ impl Turtlebot {
                             ttb_data.current_port_name= c.serial_port_name;
                             ttb_data.current_port_opened = true;
                         }
+                        if c.serial_command == "closed" {
+                            ttb_data.current_port_name= "".to_string();
+                            ttb_data.current_port_opened = false;
+                        }
                     }
                 }
             }
@@ -508,37 +538,12 @@ impl Turtlebot {
     }
 }
 
-// pub fn open_port(port_name: String) {
-//     eprintln!("{:?}", port_name);
-
-//     let mut port = serialport::new(port_name, 115200)
-//         .open()
-//         .expect("Open port");
-//     port.set_timeout(Duration::from_millis(1024));
-
-//     let mut buffer = [0; 4096];
-//     let mut residue = Vec::new();
-
-//     for i in 0..10 {
-//         let len = port.read(&mut buffer).expect("Read failed");
-//         let d = ttb2::rx::decode(&buffer[..len], &residue);
-//         match d {
-//             Ok(v) => {
-//                 let (f, r) = v;
-//                 // eprintln!("f - {:?}", f);
-//                 residue = r;
-//             }
-//             Err(e) => {
-//                 eprintln!("Error - {:?}", e);
-//             }
-//         }
-//         eprintln!("================== {:?}", i);
-//         thread::sleep(Duration::from_millis(64)); // with 64 ms, the read returns about 220~350 bytes
-//     }
-
-//     // let cmd = base_control_command(0x1, 0x1).expect("");
-//     // port.write(&cmd);
-//     // thread::sleep(Duration::from_millis(1000)); // with 64 ms, the read returns about 220~350 bytes
-//     // let cmd = base_control_command(0x0, 0x0).expect("");
-//     // port.write(&cmd);
-// }
+pub fn receive() -> Result<Vec<Feedback>> {
+    let fbd_lock = RECEIVE.get().unwrap();
+    let fbd = fbd_lock.lock().unwrap();
+    if fbd.len() > 0 {
+        RECEIVE.set(Arc::new(Mutex::new(Vec::new())));
+        return Ok(fbd.clone());
+    }
+    Err(anyhow!("What feedback?"))
+}
