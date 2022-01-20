@@ -15,7 +15,9 @@ void main() {
 Future<void> _spawn() async {
   final a = ttb.spawnTurtlebot();
   await for (final v in a) {
-    debugPrint(v.toString());
+    debugPrint("v" + v.toString());
+    var f = ttb.receiveFromTurtlebot();
+    debugPrint("f" + f.toString());
   }
 }
 

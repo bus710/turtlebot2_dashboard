@@ -455,16 +455,22 @@ impl TurtlebotData {
                                             match d {
                                                 Ok(v) => {
                                                     let(mut f, r) = v;
-                                                    // store_from_turtlebot(f);
                                                     let fdb_lock = RECEIVE.get().unwrap();
                                                     let mut fdb = fdb_lock.lock().unwrap();
                                                     fdb.append(&mut f);
                                                     let fdb_locak = Arc::new(Mutex::new(fdb));
                                                     RECEIVE.set(fdb_lock.clone());
                                                     residue = r;
+
+                                                    tx.send(Command {
+                                                        ty: CommandId::SerialControl,
+                                                        serial_command: "ready".to_string(),
+                                                        serial_port_name: "".to_string(),
+                                                        payload: Vec::new(),
+                                                    });
+
                                                 }
                                                 Err(e) => {
-                                                    // eprintln!("Error - {:?}", e);
                                                 }
                                             }
                                         }
@@ -530,6 +536,9 @@ impl Turtlebot {
                         if c.serial_command == "closed" {
                             ttb_data.current_port_name= "".to_string();
                             ttb_data.current_port_opened = false;
+                        }
+                        if c.serial_command == "ready" {
+                            ttb_data.sink.add("ready".to_string());
                         }
                     }
                 }
