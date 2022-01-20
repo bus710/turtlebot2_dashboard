@@ -4,7 +4,8 @@ use std::ops::{Shl, Shr};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Error, Result};
-use crossbeam_channel::unbounded;
+use crossbeam::unbounded;
+use crossbeam_channel as crossbeam;
 use derivative::*;
 use flutter_rust_bridge::{StreamSink, SyncReturn};
 use once_cell::sync::OnceCell;
@@ -162,14 +163,14 @@ impl Feedback {
 pub struct Command {
     pub ty: CommandId,
     pub serial_command: String,
-    pub serial_port: String,
+    pub serial_port_name: String,
     pub payload: Vec<u8>,
 }
 
 // Keyword to find USB-Serial devices
 const SERIAL: &str = "kobuki";
 // Static channel to interact with turtlebot
-static SEND: OnceCell<Arc<Mutex<crossbeam_channel::Sender<Command>>>> = OnceCell::new();
+static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();
 // Static vector to store feedbacks from turtlebot
 static RECEIVE: OnceCell<Arc<Mutex<Vec<Feedback>>>> = OnceCell::new();
 
@@ -201,15 +202,15 @@ pub fn available_tutlebots() -> Result<Vec<String>> {
 
 pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
     // The global static SEND is used to send command to the turtlebot instance
-    let (sender, receiver) = unbounded();
+    let (sender, receiver) = crossbeam::unbounded();
     let sender_lock = Arc::new(Mutex::new(sender));
     SEND.set(sender_lock);
 
     // The receiver is passed to the turtlebot instance so flutter can send command to turtlebot
     // The sink is passed to the turtlebot instance so it can actively send result to flutter
     // => then flutter should call receive_from_turtlebot to take the data
-    let mut ttb_runner = TurtlebotRunner::new(receiver, sink);
-    ttb_runner.run();
+    let mut ttb = Turtlebot::new(receiver, sink);
+    ttb.run();
 
     Ok(())
 }
@@ -220,15 +221,15 @@ pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
     if fbd.len() > 0 {
         return Ok(fbd.clone());
     }
-
     Err(anyhow!("What feedback?"))
 }
 
 pub fn open_port_command(serial_port: String) -> Result<()> {
+    eprintln!("open_port_command");
     let mut cmd = Command {
         ty: CommandId::SerialControl,
         serial_command: "open".to_string(),
-        serial_port: serial_port,
+        serial_port_name: serial_port,
         payload: Vec::new(),
     };
     let tx_lock = SEND.get().unwrap();
@@ -241,7 +242,7 @@ pub fn close_port_command() -> Result<()> {
     let mut cmd = Command {
         ty: CommandId::SerialControl,
         serial_command: "close".to_string(),
-        serial_port: "".to_string(),
+        serial_port_name: "".to_string(),
         payload: Vec::new(),
     };
     let tx_lock = SEND.get().unwrap();
@@ -267,7 +268,7 @@ pub fn base_control_command(speed: u16, radius: u16) -> Result<()> {
     let mut cmd = Command {
         ty: CommandId::BaseControl,
         serial_command: "".to_string(),
-        serial_port: "".to_string(),
+        serial_port_name: "".to_string(),
         payload: payload,
     };
     let tx_lock = SEND.get().unwrap();

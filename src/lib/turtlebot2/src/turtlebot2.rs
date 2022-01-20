@@ -9,11 +9,12 @@ use std::{
 use anyhow::{anyhow, Error, Result};
 use crossbeam_channel as crossbeam;
 use flutter_rust_bridge::StreamSink;
+use serialport::{SerialPort, UsbPortInfo};
 
 use crate::api::*;
 
 // Variant enum
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CommandId {
     SerialControl = 0, // Only to open/close serial port
     BaseControl = 1,
@@ -374,91 +375,134 @@ fn get_epoch_ms() -> String {
 }
 
 #[derive(Clone)]
-pub struct Turtlebot {
+pub struct TurtlebotData {
     receiver: crossbeam::Receiver<Command>,
     sink: StreamSink<String>,
     feedbacks: Vec<Feedback>,
-    current_port: String,
     current_port_opened: bool,
+    current_port_name: String,
+    ttb_tx: crossbeam::Sender<Command>,
+    ttb_rx: crossbeam::Receiver<Command>,
+    serial_tx: crossbeam::Sender<Command>,
+    serial_rx: crossbeam::Receiver<Command>,
+}
+
+impl TurtlebotData {
+    pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> TurtlebotData {
+        let (tx1, rx1) = crossbeam::unbounded();
+        let (tx2, rx2) = crossbeam::unbounded();
+        TurtlebotData {
+            receiver: rx,
+            sink: sk,
+            feedbacks: Vec::new(),
+            current_port_opened: false,
+            current_port_name: "".to_string(),
+            ttb_tx: tx1,
+            serial_rx: rx1,
+            ttb_rx: rx2,
+            serial_tx: tx2,
+        }
+    }
+
+    pub fn command_handler(&mut self, cmd: Command) {
+        eprintln!("received");
+        match cmd.ty {
+            CommandId::SerialControl => {
+                if cmd.serial_command == "open" && !self.current_port_opened {
+                    let tx = self.serial_tx.clone();
+                    let rx = self.serial_rx.clone();
+                    thread::spawn(move || {
+                        let serial_port_name = cmd.serial_port_name.clone();
+                        let port_b = serialport::new(serial_port_name.clone(), 115_200).open();
+                        // Ticker to read a port if opened
+                        let ticker = crossbeam::tick(Duration::from_millis(1000));
+                        match port_b {
+                            Ok(p) => {
+                                // Need to send
+                                tx.send(Command {
+                                    ty: CommandId::SerialControl,
+                                    serial_command: "opened".to_string(),
+                                    serial_port_name: serial_port_name.clone(),
+                                    payload: Vec::new(),
+                                });
+                                loop {
+                                    crossbeam::select! {
+                                        recv(rx) -> cmd => {
+                                            let c = cmd.unwrap();
+                                            if c.serial_command == "close" {
+                                                // eprintln!("close");
+                                                // drop(port);
+                                                // self.current_port_opened = false;
+                                                // self.current_port_name = "".to_string();
+                                                break;
+                                            }
+                                        }
+                                        recv(ticker)-> _ => {
+                                            eprintln!("tick");
+                                            // ttb_data.sink.add("a".to_string());
+                                            // thread::sleep(Duration::from_millis(10));
+                                        }
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("{:?}", e);
+                            }
+                        }
+                    });
+
+                    // port.set_timeout(Duration::from_millis(1024));
+                    // self.current_port_opened = true;
+                    // self.current_port_name = port.name().unwrap().clone();
+                }
+            }
+            _ => {
+                self.command_handler(cmd);
+            }
+        }
+    }
+
+    pub fn tick_handler(&mut self) {
+        eprintln!("Ticker running");
+    }
+}
+
+pub struct Turtlebot {
+    turtlebot_lock: Arc<Mutex<TurtlebotData>>,
 }
 
 impl Turtlebot {
     pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> Turtlebot {
+        let ttb_data = TurtlebotData::new(rx, sk);
         Turtlebot {
-            receiver: rx,
-            sink: sk,
-            feedbacks: Vec::new(),
-            current_port: "".to_string(),
-            current_port_opened: false,
-        }
-    }
-    pub fn open(&mut self) {}
-    pub fn close(&mut self) {}
-    pub fn read(&mut self) {}
-    pub fn write(&mut self) {}
-}
-
-pub struct TurtlebotRunner {
-    turtlebot_lock: Arc<Mutex<Turtlebot>>,
-}
-
-impl TurtlebotRunner {
-    pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> TurtlebotRunner {
-        let ttb_lock = Turtlebot::new(rx, sk);
-        TurtlebotRunner {
-            turtlebot_lock: Arc::new(Mutex::new(ttb_lock)),
+            turtlebot_lock: Arc::new(Mutex::new(ttb_data)),
         }
     }
 
     pub fn run(&mut self) {
         // Get the mutex
         let ttb_lock = self.turtlebot_lock.clone();
-        //
-        let ticker = crossbeam::tick(Duration::from_millis(1000));
         // Thread body
         thread::spawn(move || {
             // Unlock the mutex
-            let mut ttb = ttb_lock.lock().unwrap();
+            let mut ttb_data = ttb_lock.lock().unwrap();
             // Enter the loop
             loop {
                 crossbeam::select! {
-                    recv(ttb.receiver) -> cmd =>{
-                        match cmd{
-                            Ok(cmd_) => {
-                                eprintln!("from Rust thread - {:?}", cmd_);
-                                ttb.open();
-                                ttb.close();
-                                ttb.read();
-                                ttb.write();
-                                let f = Feedback::new();
-                                let mut ff = Vec::new();
-                                ff.push(f);
-                                //
-                                match cmd_.ty{
-                                    CommandId::SerialControl => {
-                                        if cmd_.serial_command == "open" && !ttb.current_port_opened{
-                                            ttb.current_port_opened = true;
-
-                                        } else if cmd_.serial_command == "close" && ttb.current_port_opened {
-                                            ttb.current_port_opened = false;
-                                        }
-                                    },
-                                    CommandId::BaseControl=> {},
-                                    _ => {}
-                                }
-                                eprintln!("serial command requested - port state: {:?}", ttb.current_port_opened);
-                            },
-                            Err (e) => {
-                                eprintln!("{:?}", e);
-                            },
+                    // From Flutter
+                    recv(ttb_data.receiver) -> cmd =>{
+                        let c = cmd.unwrap();
+                        ttb_data.command_handler(c);
+                    }
+                    // From internal thread for serial
+                    recv(ttb_data.ttb_rx) -> cmd =>{
+                        let c = cmd.unwrap();
+                        if c.serial_command == "opened" {
+                            ttb_data.current_port_name= c.serial_port_name;
+                            ttb_data.current_port_opened = true;
                         }
                     }
-                    recv(ticker)-> _ => {
-                        eprintln!("Ticker running");
-                    }
                 }
-                // ttb.sink.add("a".to_string());
-                // thread::sleep(Duration::from_millis(10));
             }
         });
     }
