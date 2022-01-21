@@ -9,9 +9,9 @@ use derivative::*;
 use flutter_rust_bridge::{StreamSink, SyncReturn};
 use serialport::{SerialPortInfo, SerialPortType};
 
-use crate::tx::*;
-use crate::turtlebot2::*;
 use crate::rx::*;
+use crate::turtlebot2::*;
+use crate::tx::*;
 
 #[derive(Debug, Clone, Derivative)]
 #[derivative(Default)]

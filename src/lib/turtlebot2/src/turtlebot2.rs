@@ -13,8 +13,8 @@ use once_cell::sync::OnceCell;
 use serialport::{SerialPort, UsbPortInfo};
 
 use crate::api::*;
-use crate::tx::*;
 use crate::rx::*;
+use crate::tx::*;
 
 // Static channel to interact with turtlebot
 static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();
@@ -26,7 +26,7 @@ pub fn set_statics_in_turtlebot(sender: crossbeam::Sender<Command>) {
     // The global static SEND is used to send command to the turtlebot instance
     let sender_lock = Arc::new(Mutex::new(sender));
     SEND.set(sender_lock);
-    // The global static RECEIVE is used to receive feedbacks by Flutter 
+    // The global static RECEIVE is used to receive feedbacks by Flutter
     let feedback_lock = Arc::new(Mutex::new(Vec::new()));
     RECEIVE.set(feedback_lock);
 }
@@ -75,7 +75,9 @@ impl TurtlebotData {
             // Serial port state indicators
             current_port_opened: false,
             current_port_name: "".to_string(),
-            // Be careful! - these channels are twisted.
+            // Be careful! - these channels are twisted for bidirectional comm.
+            // ttb_tx => serial_rx
+            // serial_tx => ttb_rx
             ttb_tx: tx1,
             serial_rx: rx1,
             ttb_rx: rx2,
