@@ -14,6 +14,7 @@ use serialport::{SerialPort, UsbPortInfo};
 
 // To pack data into Feedback
 use crate::api::*;
+use crate::rx::*;
 
 // Variant enum
 #[derive(Debug, Clone, PartialEq)]
