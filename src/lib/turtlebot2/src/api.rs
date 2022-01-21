@@ -12,6 +12,7 @@ use once_cell::sync::OnceCell;
 use serialport::{SerialPortInfo, SerialPortType};
 
 use crate::turtlebot2::*;
+use crate::tx::*;
 
 // Variant enum
 #[derive(Debug, FromPrimitive, ToPrimitive)]
