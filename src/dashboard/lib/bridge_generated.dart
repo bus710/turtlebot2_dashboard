@@ -24,6 +24,44 @@ abstract class Turtlebot2 {
 
   Future<void> baseControlCommand(
       {required int speed, required int radius, dynamic hint});
+
+  Future<void> soundCommand(
+      {required int freq,
+      required int amp,
+      required int duration,
+      dynamic hint});
+
+  Future<void> soundSequenceCommand({required int seq, dynamic hint});
+
+  Future<void> requestExtraCommand(
+      {required bool hwVer,
+      required bool fwVer,
+      required bool udid,
+      dynamic hint});
+
+  Future<void> generalPurposeOutputCommand(
+      {required bool dOutCh0,
+      required bool dOutCh1,
+      required bool dOutCh2,
+      required bool dOutCh3,
+      required bool power3V3,
+      required bool power5V0,
+      required bool power12V5A,
+      required bool power12V1A5,
+      required bool redLed1,
+      required bool redLed2,
+      required bool greenLed1,
+      required bool greenLed2,
+      dynamic hint});
+
+  Future<void> setControllerGainCommand(
+      {required bool isUserConfigured,
+      required int p,
+      required double i,
+      required int d,
+      dynamic hint});
+
+  Future<void> getControllerGain({dynamic hint});
 }
 
 class BasicSensor {
@@ -328,12 +366,169 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
         hint: hint,
       ));
 
+  Future<void> soundCommand(
+          {required int freq,
+          required int amp,
+          required int duration,
+          dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_sound_command(port, _api2wire_u8(freq),
+            _api2wire_u8(amp), _api2wire_u8(duration)),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "sound_command",
+          argNames: ["freq", "amp", "duration"],
+        ),
+        argValues: [freq, amp, duration],
+        hint: hint,
+      ));
+
+  Future<void> soundSequenceCommand({required int seq, dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) =>
+            inner.wire_sound_sequence_command(port, _api2wire_u8(seq)),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "sound_sequence_command",
+          argNames: ["seq"],
+        ),
+        argValues: [seq],
+        hint: hint,
+      ));
+
+  Future<void> requestExtraCommand(
+          {required bool hwVer,
+          required bool fwVer,
+          required bool udid,
+          dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) =>
+            inner.wire_request_extra_command(port, hwVer, fwVer, udid),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "request_extra_command",
+          argNames: ["hwVer", "fwVer", "udid"],
+        ),
+        argValues: [hwVer, fwVer, udid],
+        hint: hint,
+      ));
+
+  Future<void> generalPurposeOutputCommand(
+          {required bool dOutCh0,
+          required bool dOutCh1,
+          required bool dOutCh2,
+          required bool dOutCh3,
+          required bool power3V3,
+          required bool power5V0,
+          required bool power12V5A,
+          required bool power12V1A5,
+          required bool redLed1,
+          required bool redLed2,
+          required bool greenLed1,
+          required bool greenLed2,
+          dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_general_purpose_output_command(
+            port,
+            dOutCh0,
+            dOutCh1,
+            dOutCh2,
+            dOutCh3,
+            power3V3,
+            power5V0,
+            power12V5A,
+            power12V1A5,
+            redLed1,
+            redLed2,
+            greenLed1,
+            greenLed2),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "general_purpose_output_command",
+          argNames: [
+            "dOutCh0",
+            "dOutCh1",
+            "dOutCh2",
+            "dOutCh3",
+            "power3V3",
+            "power5V0",
+            "power12V5A",
+            "power12V1A5",
+            "redLed1",
+            "redLed2",
+            "greenLed1",
+            "greenLed2"
+          ],
+        ),
+        argValues: [
+          dOutCh0,
+          dOutCh1,
+          dOutCh2,
+          dOutCh3,
+          power3V3,
+          power5V0,
+          power12V5A,
+          power12V1A5,
+          redLed1,
+          redLed2,
+          greenLed1,
+          greenLed2
+        ],
+        hint: hint,
+      ));
+
+  Future<void> setControllerGainCommand(
+          {required bool isUserConfigured,
+          required int p,
+          required double i,
+          required int d,
+          dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_set_controller_gain_command(
+            port,
+            isUserConfigured,
+            _api2wire_u32(p),
+            _api2wire_f32(i),
+            _api2wire_u32(d)),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "set_controller_gain_command",
+          argNames: ["isUserConfigured", "p", "i", "d"],
+        ),
+        argValues: [isUserConfigured, p, i, d],
+        hint: hint,
+      ));
+
+  Future<void> getControllerGain({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_get_controller_gain(port),
+        parseSuccessData: _wire2api_unit,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "get_controller_gain",
+          argNames: [],
+        ),
+        argValues: [],
+        hint: hint,
+      ));
+
   // Section: api2wire
   ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
     return _api2wire_uint_8_list(utf8.encoder.convert(raw));
   }
 
+  int _api2wire_bool(bool raw) {
+    return raw ? 1 : 0;
+  }
+
+  double _api2wire_f32(double raw) {
+    return raw;
+  }
+
   int _api2wire_u16(int raw) {
+    return raw;
+  }
+
+  int _api2wire_u32(int raw) {
     return raw;
   }
 
@@ -667,6 +862,155 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
               ffi.Int64, ffi.Uint16, ffi.Uint16)>>('wire_base_control_command');
   late final _wire_base_control_command =
       _wire_base_control_commandPtr.asFunction<void Function(int, int, int)>();
+
+  void wire_sound_command(
+    int port_,
+    int freq,
+    int amp,
+    int duration,
+  ) {
+    return _wire_sound_command(
+      port_,
+      freq,
+      amp,
+      duration,
+    );
+  }
+
+  late final _wire_sound_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64, ffi.Uint8, ffi.Uint8,
+              ffi.Uint8)>>('wire_sound_command');
+  late final _wire_sound_command =
+      _wire_sound_commandPtr.asFunction<void Function(int, int, int, int)>();
+
+  void wire_sound_sequence_command(
+    int port_,
+    int seq,
+  ) {
+    return _wire_sound_sequence_command(
+      port_,
+      seq,
+    );
+  }
+
+  late final _wire_sound_sequence_commandPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64, ffi.Uint8)>>(
+          'wire_sound_sequence_command');
+  late final _wire_sound_sequence_command =
+      _wire_sound_sequence_commandPtr.asFunction<void Function(int, int)>();
+
+  void wire_request_extra_command(
+    int port_,
+    bool hw_ver,
+    bool fw_ver,
+    bool udid,
+  ) {
+    return _wire_request_extra_command(
+      port_,
+      hw_ver ? 1 : 0,
+      fw_ver ? 1 : 0,
+      udid ? 1 : 0,
+    );
+  }
+
+  late final _wire_request_extra_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64, ffi.Uint8, ffi.Uint8,
+              ffi.Uint8)>>('wire_request_extra_command');
+  late final _wire_request_extra_command = _wire_request_extra_commandPtr
+      .asFunction<void Function(int, int, int, int)>();
+
+  void wire_general_purpose_output_command(
+    int port_,
+    bool d_out_ch0,
+    bool d_out_ch1,
+    bool d_out_ch2,
+    bool d_out_ch3,
+    bool power_3v3,
+    bool power_5v0,
+    bool power_12v5a,
+    bool power_12v1a5,
+    bool red_led1,
+    bool red_led2,
+    bool green_led1,
+    bool green_led2,
+  ) {
+    return _wire_general_purpose_output_command(
+      port_,
+      d_out_ch0 ? 1 : 0,
+      d_out_ch1 ? 1 : 0,
+      d_out_ch2 ? 1 : 0,
+      d_out_ch3 ? 1 : 0,
+      power_3v3 ? 1 : 0,
+      power_5v0 ? 1 : 0,
+      power_12v5a ? 1 : 0,
+      power_12v1a5 ? 1 : 0,
+      red_led1 ? 1 : 0,
+      red_led2 ? 1 : 0,
+      green_led1 ? 1 : 0,
+      green_led2 ? 1 : 0,
+    );
+  }
+
+  late final _wire_general_purpose_output_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(
+              ffi.Int64,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8,
+              ffi.Uint8)>>('wire_general_purpose_output_command');
+  late final _wire_general_purpose_output_command =
+      _wire_general_purpose_output_commandPtr.asFunction<
+          void Function(int, int, int, int, int, int, int, int, int, int, int,
+              int, int)>();
+
+  void wire_set_controller_gain_command(
+    int port_,
+    bool is_user_configured,
+    int p,
+    double i,
+    int d,
+  ) {
+    return _wire_set_controller_gain_command(
+      port_,
+      is_user_configured ? 1 : 0,
+      p,
+      i,
+      d,
+    );
+  }
+
+  late final _wire_set_controller_gain_commandPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64, ffi.Uint8, ffi.Uint32, ffi.Float,
+              ffi.Uint32)>>('wire_set_controller_gain_command');
+  late final _wire_set_controller_gain_command =
+      _wire_set_controller_gain_commandPtr
+          .asFunction<void Function(int, int, int, double, int)>();
+
+  void wire_get_controller_gain(
+    int port_,
+  ) {
+    return _wire_get_controller_gain(
+      port_,
+    );
+  }
+
+  late final _wire_get_controller_gainPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_get_controller_gain');
+  late final _wire_get_controller_gain =
+      _wire_get_controller_gainPtr.asFunction<void Function(int)>();
 
   ffi.Pointer<wire_uint_8_list> new_uint_8_list(
     int len,

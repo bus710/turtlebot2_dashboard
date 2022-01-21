@@ -92,6 +92,148 @@ pub extern "C" fn wire_base_control_command(port_: i64, speed: u16, radius: u16)
     )
 }
 
+#[no_mangle]
+pub extern "C" fn wire_sound_command(port_: i64, freq: u8, amp: u8, duration: u8) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "sound_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_freq = freq.wire2api();
+            let api_amp = amp.wire2api();
+            let api_duration = duration.wire2api();
+            move |task_callback| sound_command(api_freq, api_amp, api_duration)
+        },
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_sound_sequence_command(port_: i64, seq: u8) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "sound_sequence_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_seq = seq.wire2api();
+            move |task_callback| sound_sequence_command(api_seq)
+        },
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_request_extra_command(port_: i64, hw_ver: bool, fw_ver: bool, udid: bool) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "request_extra_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_hw_ver = hw_ver.wire2api();
+            let api_fw_ver = fw_ver.wire2api();
+            let api_udid = udid.wire2api();
+            move |task_callback| request_extra_command(api_hw_ver, api_fw_ver, api_udid)
+        },
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_general_purpose_output_command(
+    port_: i64,
+    d_out_ch0: bool,
+    d_out_ch1: bool,
+    d_out_ch2: bool,
+    d_out_ch3: bool,
+    power_3v3: bool,
+    power_5v0: bool,
+    power_12v5a: bool,
+    power_12v1a5: bool,
+    red_led1: bool,
+    red_led2: bool,
+    green_led1: bool,
+    green_led2: bool,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "general_purpose_output_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_d_out_ch0 = d_out_ch0.wire2api();
+            let api_d_out_ch1 = d_out_ch1.wire2api();
+            let api_d_out_ch2 = d_out_ch2.wire2api();
+            let api_d_out_ch3 = d_out_ch3.wire2api();
+            let api_power_3v3 = power_3v3.wire2api();
+            let api_power_5v0 = power_5v0.wire2api();
+            let api_power_12v5a = power_12v5a.wire2api();
+            let api_power_12v1a5 = power_12v1a5.wire2api();
+            let api_red_led1 = red_led1.wire2api();
+            let api_red_led2 = red_led2.wire2api();
+            let api_green_led1 = green_led1.wire2api();
+            let api_green_led2 = green_led2.wire2api();
+            move |task_callback| {
+                general_purpose_output_command(
+                    api_d_out_ch0,
+                    api_d_out_ch1,
+                    api_d_out_ch2,
+                    api_d_out_ch3,
+                    api_power_3v3,
+                    api_power_5v0,
+                    api_power_12v5a,
+                    api_power_12v1a5,
+                    api_red_led1,
+                    api_red_led2,
+                    api_green_led1,
+                    api_green_led2,
+                )
+            }
+        },
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_set_controller_gain_command(
+    port_: i64,
+    is_user_configured: bool,
+    p: u32,
+    i: f32,
+    d: u32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "set_controller_gain_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || {
+            let api_is_user_configured = is_user_configured.wire2api();
+            let api_p = p.wire2api();
+            let api_i = i.wire2api();
+            let api_d = d.wire2api();
+            move |task_callback| {
+                set_controller_gain_command(api_is_user_configured, api_p, api_i, api_d)
+            }
+        },
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_get_controller_gain(port_: i64) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "get_controller_gain",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| get_controller_gain(),
+    )
+}
+
 // Section: wire structs
 
 #[repr(C)]
@@ -140,8 +282,26 @@ impl Wire2Api<String> for *mut wire_uint_8_list {
     }
 }
 
+impl Wire2Api<bool> for bool {
+    fn wire2api(self) -> bool {
+        self
+    }
+}
+
+impl Wire2Api<f32> for f32 {
+    fn wire2api(self) -> f32 {
+        self
+    }
+}
+
 impl Wire2Api<u16> for u16 {
     fn wire2api(self) -> u16 {
+        self
+    }
+}
+
+impl Wire2Api<u32> for u32 {
+    fn wire2api(self) -> u32 {
         self
     }
 }

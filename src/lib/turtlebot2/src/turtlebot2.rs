@@ -41,10 +41,11 @@ pub fn send(cmd: Command) {
 // To read stored Feedbacks by Flutter
 pub fn receive() -> Result<Vec<Feedback>> {
     let fbd_lock = RECEIVE.get().unwrap();
-    let fbd = fbd_lock.lock().unwrap();
+    let mut fbd = fbd_lock.lock().unwrap();
     if fbd.len() > 0 {
-        RECEIVE.set(Arc::new(Mutex::new(Vec::new())));
-        return Ok(fbd.clone());
+        let fbd_ = fbd.clone();
+        fbd.clear();
+        return Ok(fbd_.clone());
     }
     Err(anyhow!("What feedback?"))
 }
@@ -150,7 +151,6 @@ impl TurtlebotData {
                                             serial_port_name: "".to_string(),
                                             payload: Vec::new(),
                                         });
-
                                     }
                                     // If failed to decode? TBD
                                     Err(e) => {
