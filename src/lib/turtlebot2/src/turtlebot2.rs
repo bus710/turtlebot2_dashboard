@@ -413,25 +413,23 @@ impl TurtlebotData {
         }
     }
 
-    pub fn command_handler(&mut self, cmd: Command) {
-        eprintln!("received");
-        match cmd.ty {
-            CommandId::SerialControl => {
-                if cmd.serial_command == "open" && !self.current_port_opened {
-                    let cmd = cmd.clone();
-                    let tx = self.serial_tx.clone();
-                    let rx = self.serial_rx.clone();
-                    self.serial_runner(cmd, tx, rx);
-                }
-            }
-            // All non-SerialControl commands
-            _ => {
-                self.ttb_tx.send(cmd);
-            }
-        }
-    }
-
-    pub fn turtlebot_runner(&mut self) {}
+    // pub fn command_handler(&mut self, cmd: Command) {
+    //     eprintln!("received");
+    //     match cmd.ty {
+    //         CommandId::SerialControl => {
+    //             if cmd.serial_command == "open" && !self.current_port_opened {
+    //                 let cmd = cmd.clone();
+    //                 let tx = self.serial_tx.clone();
+    //                 let rx = self.serial_rx.clone();
+    //                 self.serial_runner(cmd, tx, rx);
+    //             }
+    //         }
+    //         // All non-SerialControl commands
+    //         _ => {
+    //             self.ttb_tx.send(cmd);
+    //         }
+    //     }
+    // }
 
     pub fn serial_runner(
         &mut self,
@@ -509,6 +507,7 @@ impl TurtlebotData {
     }
 }
 
+// Turtlebot handles the communication between Flutter and serial device
 pub struct Turtlebot {
     turtlebot_lock: Arc<Mutex<TurtlebotData>>,
 }
@@ -537,8 +536,22 @@ impl Turtlebot {
                 crossbeam::select! {
                     // From Flutter => the serial thread
                     recv(ttb_data.receiver) -> cmd =>{
-                        let c = cmd.unwrap();
-                        ttb_data.command_handler(c);
+                        let cmd = cmd.unwrap();
+                        eprintln!("received");
+                        match cmd.ty {
+                            CommandId::SerialControl => {
+                                if cmd.serial_command == "open" && !ttb_data.current_port_opened {
+                                    let cmd = cmd.clone();
+                                    let tx = ttb_data.serial_tx.clone();
+                                    let rx = ttb_data.serial_rx.clone();
+                                    ttb_data.serial_runner(cmd, tx, rx);
+                                }
+                            }
+                            // All non-SerialControl commands
+                            _ => {
+                                ttb_data.ttb_tx.send(cmd);
+                            }
+                        }
                     }
                     // From the serial thread => Flutter
                     recv(ttb_data.ttb_rx) -> cmd =>{
