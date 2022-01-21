@@ -46,36 +46,14 @@ pub const CMD_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 2;
 pub const CMD_SIZE_SET_CONTROLLER_GAIN: u8 = 13;
 pub const CMD_SIZE_GET_CONTROLLER_GAIN: u8 = 1;
 
-// Variant enum
-#[derive(Debug, FromPrimitive, ToPrimitive)]
-pub enum FeedbackId {
-    BasicSensor = 1,
-    DockingIR = 3,
-    InertialSensor = 4,
-    Cliff = 5,
-    Current = 6,
-    HardwareVersion = 10,
-    FirmwareVersion = 11,
-    RawDataOf3AxisGyro = 13,
-    GeneralPurposeInput = 16,
-    UniqueDeviceId = 19,
-    ControllerInfo = 21,
+//
+#[derive(Debug, Clone)]
+pub struct Command {
+    pub ty: CommandId,
+    pub serial_command: String,
+    pub serial_port_name: String,
+    pub payload: Vec<u8>,
 }
-
-// These can be used to get the size of payload
-// Gyro sensor size can be 14 or 20 bytes
-pub const FDB_SIZE_BASIC_SENSOR_DATA: u8 = 15;
-pub const FDB_SIZE_DOCKING_IR: u8 = 3;
-pub const FDB_SIZE_INERTIAL_SENSOR: u8 = 7;
-pub const FDB_SIZE_CLIFF: u8 = 6;
-pub const FDB_SIZE_CURRENT: u8 = 2;
-pub const FDB_SIZE_HARDWARE_VERSION: u8 = 4;
-pub const FDB_SIZE_FIRMWARE_VERSION: u8 = 4;
-pub const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A: u8 = 14;
-pub const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B: u8 = 20;
-pub const FDB_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 16;
-pub const FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER: u8 = 12;
-pub const FDB_SIZE_CONTROLLER_INFO: u8 = 13;
 
 // decode (buffer => packets => feedbacks)
 pub fn decode(buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feedback>, Vec<u8>)> {
@@ -375,8 +353,32 @@ fn get_epoch_ms() -> String {
         .to_string()
 }
 
+// Static channel to interact with turtlebot
+static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();
 // Static vector to store feedbacks from turtlebot
 static RECEIVE: OnceCell<Arc<Mutex<Vec<Feedback>>>> = OnceCell::new();
+
+pub fn set_statics_in_turtlebot(sender: crossbeam::Sender<Command>) {
+    // The global static SEND is used to send command to the turtlebot instance
+    let sender_lock = Arc::new(Mutex::new(sender));
+    SEND.set(sender_lock);
+}
+
+pub fn send(cmd: Command) {
+    let tx_lock = SEND.get().unwrap();
+    let tx = tx_lock.lock().unwrap();
+    tx.send(cmd);
+}
+
+pub fn receive() -> Result<Vec<Feedback>> {
+    let fbd_lock = RECEIVE.get().unwrap();
+    let fbd = fbd_lock.lock().unwrap();
+    if fbd.len() > 0 {
+        RECEIVE.set(Arc::new(Mutex::new(Vec::new())));
+        return Ok(fbd.clone());
+    }
+    Err(anyhow!("What feedback?"))
+}
 
 #[derive(Clone)]
 pub struct TurtlebotData {
@@ -396,11 +398,14 @@ impl TurtlebotData {
         let (tx1, rx1) = crossbeam::unbounded();
         let (tx2, rx2) = crossbeam::unbounded();
         TurtlebotData {
+            // To interact with outside
             receiver: rx,
             sink: sk,
             feedbacks: Vec::new(),
+            // Serial port state indicators
             current_port_opened: false,
             current_port_name: "".to_string(),
+            // Be careful! - these channels are twisted.
             ttb_tx: tx1,
             serial_rx: rx1,
             ttb_rx: rx2,
@@ -413,85 +418,94 @@ impl TurtlebotData {
         match cmd.ty {
             CommandId::SerialControl => {
                 if cmd.serial_command == "open" && !self.current_port_opened {
+                    let cmd = cmd.clone();
                     let tx = self.serial_tx.clone();
                     let rx = self.serial_rx.clone();
-                    thread::spawn(move || {
-                        // Ticker to periodically read a port if opened
-                        let ticker = crossbeam::tick(Duration::from_millis(64));
-                        let serial_port_name = cmd.serial_port_name.clone();
-                        let port_b = serialport::new(serial_port_name.clone(), 115_200).open();
-                        match port_b {
-                            Ok(mut p) => {
-                                // Need to send
-                                tx.send(Command {
-                                    ty: CommandId::SerialControl,
-                                    serial_command: "opened".to_string(),
-                                    serial_port_name: serial_port_name.clone(),
-                                    payload: Vec::new(),
-                                });
-
-                                let mut buffer = [0; 4096];
-                                let mut residue = Vec::new();
-
-                                loop {
-                                    crossbeam::select! {
-                                        recv(rx) -> cmd => {
-                                            let c = cmd.unwrap();
-                                            if c.serial_command == "close" {
-                                                tx.send(Command {
-                                                    ty: CommandId::SerialControl,
-                                                    serial_command: "closed".to_string(),
-                                                    serial_port_name: serial_port_name.clone(),
-                                                    payload: Vec::new(),
-                                                });
-                                                break;
-                                            }
-                                        }
-                                        recv(ticker)-> _ => {
-                                            // ttb_data.sink.add("a".to_string());
-                                            // thread::sleep(Duration::from_millis(10));
-                                            let len = p.read(&mut buffer).expect("Read failed");
-                                            let d = decode(&buffer[..len], &residue);
-                                            match d {
-                                                Ok(v) => {
-                                                    let(mut f, r) = v;
-                                                    let fdb_lock = RECEIVE.get().unwrap();
-                                                    let mut fdb = fdb_lock.lock().unwrap();
-                                                    fdb.append(&mut f);
-                                                    let fdb_locak = Arc::new(Mutex::new(fdb));
-                                                    RECEIVE.set(fdb_lock.clone());
-                                                    residue = r;
-
-                                                    tx.send(Command {
-                                                        ty: CommandId::SerialControl,
-                                                        serial_command: "ready".to_string(),
-                                                        serial_port_name: "".to_string(),
-                                                        payload: Vec::new(),
-                                                    });
-
-                                                }
-                                                Err(e) => {
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                eprintln!("{:?}", e);
-                            }
-                        }
-                    });
+                    self.serial_runner(cmd, tx, rx);
                 }
             }
+            // All non-SerialControl commands
             _ => {
                 self.ttb_tx.send(cmd);
             }
         }
     }
 
-    pub fn tick_handler(&mut self) {
-        eprintln!("Ticker running");
+    pub fn turtlebot_runner(&mut self) {}
+
+    pub fn serial_runner(
+        &mut self,
+        cmd: Command,
+        tx: crossbeam::Sender<Command>,
+        rx: crossbeam::Receiver<Command>,
+    ) {
+        thread::spawn(move || {
+            // Ticker to periodically read a port if opened
+            let ticker = crossbeam::tick(Duration::from_millis(64));
+            let serial_port_name = cmd.serial_port_name.clone();
+            let port_b = serialport::new(serial_port_name.clone(), 115_200).open();
+            match port_b {
+                Ok(mut p) => {
+                    // Need to send
+                    tx.send(Command {
+                        ty: CommandId::SerialControl,
+                        serial_command: "opened".to_string(),
+                        serial_port_name: serial_port_name.clone(),
+                        payload: Vec::new(),
+                    });
+
+                    let mut buffer = [0; 4096];
+                    let mut residue = Vec::new();
+
+                    loop {
+                        crossbeam::select! {
+                            recv(rx) -> cmd => {
+                                let c = cmd.unwrap();
+                                if c.serial_command == "close" {
+                                    tx.send(Command {
+                                        ty: CommandId::SerialControl,
+                                        serial_command: "closed".to_string(),
+                                        serial_port_name: serial_port_name.clone(),
+                                        payload: Vec::new(),
+                                    });
+                                    break;
+                                }
+                            }
+                            recv(ticker)-> _ => {
+                                // ttb_data.sink.add("a".to_string());
+                                // thread::sleep(Duration::from_millis(10));
+                                let len = p.read(&mut buffer).expect("Read failed");
+                                let d = decode(&buffer[..len], &residue);
+                                match d {
+                                    Ok(v) => {
+                                        let(mut f, r) = v;
+                                        let fdb_lock = RECEIVE.get().unwrap();
+                                        let mut fdb = fdb_lock.lock().unwrap();
+                                        fdb.append(&mut f);
+                                        let fdb_locak = Arc::new(Mutex::new(fdb));
+                                        RECEIVE.set(fdb_lock.clone());
+                                        residue = r;
+
+                                        tx.send(Command {
+                                            ty: CommandId::SerialControl,
+                                            serial_command: "ready".to_string(),
+                                            serial_port_name: "".to_string(),
+                                            payload: Vec::new(),
+                                        });
+
+                                    }
+                                    Err(e) => {
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("{:?}", e);
+                }
+            }
+        });
     }
 }
 
@@ -521,12 +535,12 @@ impl Turtlebot {
             // Enter the loop
             loop {
                 crossbeam::select! {
-                    // From Flutter
+                    // From Flutter => the serial thread
                     recv(ttb_data.receiver) -> cmd =>{
                         let c = cmd.unwrap();
                         ttb_data.command_handler(c);
                     }
-                    // From internal thread for serial
+                    // From the serial thread => Flutter
                     recv(ttb_data.ttb_rx) -> cmd =>{
                         let c = cmd.unwrap();
                         if c.serial_command == "opened" {
@@ -545,14 +559,4 @@ impl Turtlebot {
             }
         });
     }
-}
-
-pub fn receive() -> Result<Vec<Feedback>> {
-    let fbd_lock = RECEIVE.get().unwrap();
-    let fbd = fbd_lock.lock().unwrap();
-    if fbd.len() > 0 {
-        RECEIVE.set(Arc::new(Mutex::new(Vec::new())));
-        return Ok(fbd.clone());
-    }
-    Err(anyhow!("What feedback?"))
 }

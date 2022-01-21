@@ -13,6 +13,37 @@ use serialport::{SerialPortInfo, SerialPortType};
 
 use crate::turtlebot2::*;
 
+// Variant enum
+#[derive(Debug, FromPrimitive, ToPrimitive)]
+pub enum FeedbackId {
+    BasicSensor = 1,
+    DockingIR = 3,
+    InertialSensor = 4,
+    Cliff = 5,
+    Current = 6,
+    HardwareVersion = 10,
+    FirmwareVersion = 11,
+    RawDataOf3AxisGyro = 13,
+    GeneralPurposeInput = 16,
+    UniqueDeviceId = 19,
+    ControllerInfo = 21,
+}
+
+// These can be used to get the size of payload
+// Gyro sensor size can be 14 or 20 bytes
+pub const FDB_SIZE_BASIC_SENSOR_DATA: u8 = 15;
+pub const FDB_SIZE_DOCKING_IR: u8 = 3;
+pub const FDB_SIZE_INERTIAL_SENSOR: u8 = 7;
+pub const FDB_SIZE_CLIFF: u8 = 6;
+pub const FDB_SIZE_CURRENT: u8 = 2;
+pub const FDB_SIZE_HARDWARE_VERSION: u8 = 4;
+pub const FDB_SIZE_FIRMWARE_VERSION: u8 = 4;
+pub const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A: u8 = 14;
+pub const FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B: u8 = 20;
+pub const FDB_SIZE_GENERAL_PURPOSE_OUTPUT: u8 = 16;
+pub const FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER: u8 = 12;
+pub const FDB_SIZE_CONTROLLER_INFO: u8 = 13;
+
 #[derive(Debug, Clone, Derivative)]
 #[derivative(Default)]
 pub struct Feedback {
@@ -158,19 +189,8 @@ impl Feedback {
     }
 }
 
-//
-#[derive(Debug, Clone)]
-pub struct Command {
-    pub ty: CommandId,
-    pub serial_command: String,
-    pub serial_port_name: String,
-    pub payload: Vec<u8>,
-}
-
 // Keyword to find USB-Serial devices
 const SERIAL: &str = "kobuki";
-// Static channel to interact with turtlebot
-static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();
 
 pub fn available_tutlebots() -> Result<Vec<String>> {
     let ports = serialport::available_ports()?;
@@ -199,10 +219,8 @@ pub fn available_tutlebots() -> Result<Vec<String>> {
 }
 
 pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
-    // The global static SEND is used to send command to the turtlebot instance
     let (sender, receiver) = crossbeam::unbounded();
-    let sender_lock = Arc::new(Mutex::new(sender));
-    SEND.set(sender_lock);
+    set_statics_in_turtlebot(sender);
 
     // The receiver is passed to the turtlebot instance so flutter can send command to turtlebot
     // The sink is passed to the turtlebot instance so it can actively send result to flutter
@@ -213,6 +231,29 @@ pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
     Ok(())
 }
 
+fn generate_crc(payload: &[u8]) -> u8 {
+    if payload.len() < 5 {
+        return 0;
+    }
+    let payload = payload[5..].to_vec();
+    let mut acc = 0;
+    for (_, c) in payload.iter().enumerate() {
+        acc = acc ^ *c;
+    }
+    acc
+}
+
+// will be called by other command functions
+fn send_to_turtlebot(cmd: Command) -> Result<()> {
+    // let tx_lock = SEND.get().unwrap();
+    // let tx = tx_lock.lock().unwrap();
+    // tx.send(cmd);
+
+    send(cmd);
+    Ok(())
+}
+
+// can be called to receive feedbacks when Flutter side gets notification via stream
 pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
     let feedbacks = receive();
     match feedbacks {
@@ -229,9 +270,7 @@ pub fn open_port_command(serial_port: String) -> Result<()> {
         serial_port_name: serial_port,
         payload: Vec::new(),
     };
-    let tx_lock = SEND.get().unwrap();
-    let tx = tx_lock.lock().unwrap();
-    tx.send(cmd);
+    send_to_turtlebot(cmd);
     Ok(())
 }
 
@@ -242,9 +281,7 @@ pub fn close_port_command() -> Result<()> {
         serial_port_name: "".to_string(),
         payload: Vec::new(),
     };
-    let tx_lock = SEND.get().unwrap();
-    let tx = tx_lock.lock().unwrap();
-    tx.send(cmd);
+    send_to_turtlebot(cmd);
     Ok(())
 }
 
@@ -268,21 +305,6 @@ pub fn base_control_command(speed: u16, radius: u16) -> Result<()> {
         serial_port_name: "".to_string(),
         payload: payload,
     };
-    let tx_lock = SEND.get().unwrap();
-    let tx = tx_lock.lock().unwrap();
-    tx.send(cmd);
-
+    send_to_turtlebot(cmd);
     Ok(())
-}
-
-fn generate_crc(payload: &[u8]) -> u8 {
-    if payload.len() < 5 {
-        return 0;
-    }
-    let payload = payload[5..].to_vec();
-    let mut acc = 0;
-    for (_, c) in payload.iter().enumerate() {
-        acc = acc ^ *c;
-    }
-    acc
 }
