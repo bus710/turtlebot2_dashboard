@@ -723,6 +723,30 @@ typedef DartPostCObjectFnType = ffi.Pointer<
     ffi.NativeFunction<ffi.Uint8 Function(DartPort, ffi.Pointer<ffi.Void>)>>;
 typedef DartPort = ffi.Int64;
 
+const int FDB_SIZE_BASIC_SENSOR_DATA = 15;
+
+const int FDB_SIZE_DOCKING_IR = 3;
+
+const int FDB_SIZE_INERTIAL_SENSOR = 7;
+
+const int FDB_SIZE_CLIFF = 6;
+
+const int FDB_SIZE_CURRENT = 2;
+
+const int FDB_SIZE_HARDWARE_VERSION = 4;
+
+const int FDB_SIZE_FIRMWARE_VERSION = 4;
+
+const int FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A = 14;
+
+const int FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B = 20;
+
+const int FDB_SIZE_GENERAL_PURPOSE_OUTPUT = 16;
+
+const int FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER = 12;
+
+const int FDB_SIZE_CONTROLLER_INFO = 13;
+
 const int CMD_LEN_BASE_CONTROL = 7;
 
 const int CMD_LEN_SOUND = 6;
@@ -750,27 +774,3 @@ const int CMD_SIZE_GENERAL_PURPOSE_OUTPUT = 2;
 const int CMD_SIZE_SET_CONTROLLER_GAIN = 13;
 
 const int CMD_SIZE_GET_CONTROLLER_GAIN = 1;
-
-const int FDB_SIZE_BASIC_SENSOR_DATA = 15;
-
-const int FDB_SIZE_DOCKING_IR = 3;
-
-const int FDB_SIZE_INERTIAL_SENSOR = 7;
-
-const int FDB_SIZE_CLIFF = 6;
-
-const int FDB_SIZE_CURRENT = 2;
-
-const int FDB_SIZE_HARDWARE_VERSION = 4;
-
-const int FDB_SIZE_FIRMWARE_VERSION = 4;
-
-const int FDB_SIZE_RAW_DATA_3_AXIS_GYRO_A = 14;
-
-const int FDB_SIZE_RAW_DATA_3_AXIS_GYRO_B = 20;
-
-const int FDB_SIZE_GENERAL_PURPOSE_OUTPUT = 16;
-
-const int FDB_SIZE_UNIQUE_DEVICE_IDENTIFIER = 12;
-
-const int FDB_SIZE_CONTROLLER_INFO = 13;
