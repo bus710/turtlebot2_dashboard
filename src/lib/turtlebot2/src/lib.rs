@@ -3,8 +3,8 @@ extern crate num;
 extern crate num_derive;
 
 mod api;
+mod rx;
 mod turtlebot2;
 mod tx;
-mod rx;
 
 mod bridge_generated; /* AUTO INJECTED BY flutter_rust_bridge. This line may not be accurate, and you can change it according to your needs. */

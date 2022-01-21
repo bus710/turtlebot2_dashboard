@@ -13,8 +13,8 @@ use once_cell::sync::OnceCell;
 use serialport::{SerialPort, UsbPortInfo};
 
 use crate::api::*;
-use crate::tx::*;
 use crate::rx::*;
+use crate::tx::*;
 
 // Static channel to interact with turtlebot
 static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();

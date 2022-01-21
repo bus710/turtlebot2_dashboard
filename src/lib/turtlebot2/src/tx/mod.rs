@@ -1,16 +1,8 @@
 #![allow(unused)]
 
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Error, Result};
-use crossbeam_channel as crossbeam;
-use flutter_rust_bridge::StreamSink;
-use once_cell::sync::OnceCell;
-use serialport::{SerialPort, UsbPortInfo};
 
 // To pack data into Feedback
 use crate::api::*;
