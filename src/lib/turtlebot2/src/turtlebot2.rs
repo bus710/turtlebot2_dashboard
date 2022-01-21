@@ -13,26 +13,32 @@ use once_cell::sync::OnceCell;
 use serialport::{SerialPort, UsbPortInfo};
 
 use crate::api::*;
-use crate::rx::*;
 use crate::tx::*;
+use crate::rx::*;
 
 // Static channel to interact with turtlebot
 static SEND: OnceCell<Arc<Mutex<crossbeam::Sender<Command>>>> = OnceCell::new();
 // Static vector to store feedbacks from turtlebot
 static RECEIVE: OnceCell<Arc<Mutex<Vec<Feedback>>>> = OnceCell::new();
 
+// Will be called by the spawning function
 pub fn set_statics_in_turtlebot(sender: crossbeam::Sender<Command>) {
     // The global static SEND is used to send command to the turtlebot instance
     let sender_lock = Arc::new(Mutex::new(sender));
     SEND.set(sender_lock);
+    // The global static RECEIVE is used to receive feedbacks by Flutter 
+    let feedback_lock = Arc::new(Mutex::new(Vec::new()));
+    RECEIVE.set(feedback_lock);
 }
 
+// To send commands to the thread in Turtlebot
 pub fn send(cmd: Command) {
     let tx_lock = SEND.get().unwrap();
     let tx = tx_lock.lock().unwrap();
     tx.send(cmd);
 }
 
+// To read stored Feedbacks by Flutter
 pub fn receive() -> Result<Vec<Feedback>> {
     let fbd_lock = RECEIVE.get().unwrap();
     let fbd = fbd_lock.lock().unwrap();
@@ -90,7 +96,7 @@ impl TurtlebotData {
             let port_b = serialport::new(serial_port_name.clone(), 115_200).open();
             match port_b {
                 Ok(mut p) => {
-                    // Need to send
+                    // Need to send back to indicate the port is opened
                     tx.send(Command {
                         ty: CommandId::SerialControl,
                         serial_command: "opened".to_string(),
@@ -106,12 +112,14 @@ impl TurtlebotData {
                             recv(rx) -> cmd => {
                                 let c = cmd.unwrap();
                                 if c.serial_command == "close" {
+                                    // Need to send back to indicate the port is closed
                                     tx.send(Command {
                                         ty: CommandId::SerialControl,
                                         serial_command: "closed".to_string(),
                                         serial_port_name: serial_port_name.clone(),
                                         payload: Vec::new(),
                                     });
+                                    // Exit from the loop so the port will be dropped
                                     break;
                                 }
                             }
@@ -121,6 +129,8 @@ impl TurtlebotData {
                                 let len = p.read(&mut buffer).expect("Read failed");
                                 let d = decode(&buffer[..len], &residue);
                                 match d {
+                                    // Incoming packets are well decoded.
+                                    // Push to the static vector
                                     Ok(v) => {
                                         let(mut f, r) = v;
                                         let fdb_lock = RECEIVE.get().unwrap();
@@ -130,6 +140,8 @@ impl TurtlebotData {
                                         RECEIVE.set(fdb_lock.clone());
                                         residue = r;
 
+                                        // Need to send back to indicate the feedbacks are ready
+                                        // Then Flutter will receive and read the vector
                                         tx.send(Command {
                                             ty: CommandId::SerialControl,
                                             serial_command: "ready".to_string(),
@@ -138,6 +150,7 @@ impl TurtlebotData {
                                         });
 
                                     }
+                                    // If failed to decode? TBD
                                     Err(e) => {
                                     }
                                 }
@@ -145,6 +158,8 @@ impl TurtlebotData {
                         }
                     }
                 }
+                // Failed to open any port.
+                // No state changes.
                 Err(e) => {
                     eprintln!("{:?}", e);
                 }
@@ -160,10 +175,6 @@ pub struct Turtlebot {
 
 impl Turtlebot {
     pub fn new(rx: crossbeam::Receiver<Command>, sk: StreamSink<String>) -> Turtlebot {
-        //
-        let feedback_lock = Arc::new(Mutex::new(Vec::new()));
-        RECEIVE.set(feedback_lock);
-        //
         let ttb_data = TurtlebotData::new(rx, sk);
         Turtlebot {
             turtlebot_lock: Arc::new(Mutex::new(ttb_data)),

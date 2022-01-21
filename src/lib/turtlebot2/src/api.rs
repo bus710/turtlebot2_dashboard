@@ -9,9 +9,9 @@ use derivative::*;
 use flutter_rust_bridge::{StreamSink, SyncReturn};
 use serialport::{SerialPortInfo, SerialPortType};
 
-use crate::rx::*;
-use crate::turtlebot2::*;
 use crate::tx::*;
+use crate::turtlebot2::*;
+use crate::rx::*;
 
 #[derive(Debug, Clone, Derivative)]
 #[derivative(Default)]
@@ -214,10 +214,6 @@ fn generate_crc(payload: &[u8]) -> u8 {
 
 // will be called by other command functions
 fn send_to_turtlebot(cmd: Command) -> Result<()> {
-    // let tx_lock = SEND.get().unwrap();
-    // let tx = tx_lock.lock().unwrap();
-    // tx.send(cmd);
-
     send(cmd);
     Ok(())
 }
@@ -265,6 +261,7 @@ pub fn base_control_command(speed: u16, radius: u16) -> Result<()> {
     payload.push((speed & 0xff00).shr(8) as u8);
     payload.push((radius & 0xff) as u8);
     payload.push((radius & 0xff00).shr(8) as u8);
+
     let crc = generate_crc(&payload.clone());
     payload.push(crc);
 
