@@ -49,6 +49,17 @@ pub struct Command {
     pub payload: Vec<u8>,
 }
 
+impl Command {
+    pub fn new() -> Command {
+        Command {
+            ty: CommandId::SerialControl,
+            serial_command: "".to_string(),
+            serial_port_name: "".to_string(),
+            payload: Vec::new(),
+        }
+    }
+}
+
 // decode (buffer => packets => feedbacks)
 pub fn decode(buffer: &[u8], mut residue: &[u8]) -> Result<(Vec<Feedback>, Vec<u8>)> {
     // Check if the length if enough.
