@@ -7,12 +7,12 @@ use crossbeam::unbounded;
 use crossbeam_channel as crossbeam;
 use derivative::*;
 use flutter_rust_bridge::{StreamSink, SyncReturn};
-use serialport::{SerialPortInfo, SerialPortType};
 
 use crate::rx::*;
 use crate::turtlebot2::*;
 use crate::tx::*;
 
+// All of these structs should be here so it can be recognized by FFIGen Bridge.
 #[derive(Debug, Clone, Derivative)]
 #[derivative(Default)]
 pub struct Feedback {
@@ -158,40 +158,13 @@ impl Feedback {
     }
 }
 
-// Keyword to find USB-Serial devices
-const SERIAL: &str = "kobuki";
-
-pub fn available_tutlebots() -> Result<Vec<String>> {
-    let ports = serialport::available_ports()?;
-    if ports.len() < 1 {
-        return Err(anyhow!("No port found! (or check dialout group)"));
-    }
-
-    let mut found = Vec::new();
-
-    // Need to check if there is any port that has serial number with the given string "kobuki"
-    let mut found_kobuki = false;
-    for p in ports.iter() {
-        match p.port_type.clone() {
-            SerialPortType::UsbPort(info) => {
-                if info.serial_number.unwrap().contains(SERIAL) {
-                    // eprintln!("Found port: {:?} - {:?}", p.port_name, p);
-                    found_kobuki = true;
-                    found.push(p.port_name.clone());
-                }
-            }
-            _ => (),
-        };
-    }
-
-    Ok(found)
-}
-
+// Should be called ONLY once
 pub fn spawn_turtlebot(sink: StreamSink<String>) -> Result<()> {
+    // The sender will be set as the static in turtlebot.rs
     let (sender, receiver) = crossbeam::unbounded();
     set_statics_in_turtlebot(sender);
 
-    // The receiver is passed to the turtlebot instance so flutter can send command to turtlebot
+    // The receiver is passed to the turtlebot instance so Flutter can send command to turtlebot
     // The sink is passed to the turtlebot instance so it can actively send result to flutter
     // => then flutter should call receive_from_turtlebot to take the data
     let mut ttb = Turtlebot::new(receiver, sink);
@@ -228,6 +201,20 @@ pub fn receive_from_turtlebot() -> Result<Vec<Feedback>> {
     match feedbacks {
         Ok(f) => Ok(f),
         Err(_) => Err(anyhow!("What feedback?")),
+    }
+}
+
+pub fn search_port_command() -> Result<Vec<String>> {
+    let ports = available_tutlebots();
+    match ports {
+        Ok(p) => {
+            if p.len() > 0 {
+                return Ok(p);
+            } else {
+                return Err(anyhow!("What port?"));
+            }
+        }
+        Err(_) => Err(anyhow!("What port?")),
     }
 }
 

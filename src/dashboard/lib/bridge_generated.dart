@@ -12,11 +12,11 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'dart:ffi' as ffi;
 
 abstract class Turtlebot2 {
-  Future<List<String>> availableTutlebots({dynamic hint});
-
   Stream<String> spawnTurtlebot({dynamic hint});
 
   Future<List<Feedback>> receiveFromTurtlebot({dynamic hint});
+
+  Future<List<String>> searchPortCommand({dynamic hint});
 
   Future<void> openPortCommand({required String serialPort, dynamic hint});
 
@@ -291,18 +291,6 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
 
   Turtlebot2Impl.raw(Turtlebot2Wire inner) : super(inner);
 
-  Future<List<String>> availableTutlebots({dynamic hint}) =>
-      executeNormal(FlutterRustBridgeTask(
-        callFfi: (port) => inner.wire_available_tutlebots(port),
-        parseSuccessData: _wire2api_StringList,
-        constMeta: const FlutterRustBridgeTaskConstMeta(
-          debugName: "available_tutlebots",
-          argNames: [],
-        ),
-        argValues: [],
-        hint: hint,
-      ));
-
   Stream<String> spawnTurtlebot({dynamic hint}) =>
       executeStream(FlutterRustBridgeTask(
         callFfi: (port) => inner.wire_spawn_turtlebot(port),
@@ -321,6 +309,18 @@ class Turtlebot2Impl extends FlutterRustBridgeBase<Turtlebot2Wire>
         parseSuccessData: _wire2api_list_feedback,
         constMeta: const FlutterRustBridgeTaskConstMeta(
           debugName: "receive_from_turtlebot",
+          argNames: [],
+        ),
+        argValues: [],
+        hint: hint,
+      ));
+
+  Future<List<String>> searchPortCommand({dynamic hint}) =>
+      executeNormal(FlutterRustBridgeTask(
+        callFfi: (port) => inner.wire_search_port_command(port),
+        parseSuccessData: _wire2api_StringList,
+        constMeta: const FlutterRustBridgeTaskConstMeta(
+          debugName: "search_port_command",
           argNames: [],
         ),
         argValues: [],
@@ -771,20 +771,6 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
           lookup)
       : _lookup = lookup;
 
-  void wire_available_tutlebots(
-    int port_,
-  ) {
-    return _wire_available_tutlebots(
-      port_,
-    );
-  }
-
-  late final _wire_available_tutlebotsPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
-          'wire_available_tutlebots');
-  late final _wire_available_tutlebots =
-      _wire_available_tutlebotsPtr.asFunction<void Function(int)>();
-
   void wire_spawn_turtlebot(
     int port_,
   ) {
@@ -812,6 +798,20 @@ class Turtlebot2Wire implements FlutterRustBridgeWireBase {
           'wire_receive_from_turtlebot');
   late final _wire_receive_from_turtlebot =
       _wire_receive_from_turtlebotPtr.asFunction<void Function(int)>();
+
+  void wire_search_port_command(
+    int port_,
+  ) {
+    return _wire_search_port_command(
+      port_,
+    );
+  }
+
+  late final _wire_search_port_commandPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
+          'wire_search_port_command');
+  late final _wire_search_port_command =
+      _wire_search_port_commandPtr.asFunction<void Function(int)>();
 
   void wire_open_port_command(
     int port_,

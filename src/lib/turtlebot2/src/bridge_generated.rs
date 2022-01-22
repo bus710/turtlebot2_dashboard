@@ -14,18 +14,6 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
-pub extern "C" fn wire_available_tutlebots(port_: i64) {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
-        WrapInfo {
-            debug_name: "available_tutlebots",
-            port: Some(port_),
-            mode: FfiCallMode::Normal,
-        },
-        move || move |task_callback| available_tutlebots(),
-    )
-}
-
-#[no_mangle]
 pub extern "C" fn wire_spawn_turtlebot(port_: i64) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
@@ -46,6 +34,18 @@ pub extern "C" fn wire_receive_from_turtlebot(port_: i64) {
             mode: FfiCallMode::Normal,
         },
         move || move |task_callback| receive_from_turtlebot(),
+    )
+}
+
+#[no_mangle]
+pub extern "C" fn wire_search_port_command(port_: i64) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap(
+        WrapInfo {
+            debug_name: "search_port_command",
+            port: Some(port_),
+            mode: FfiCallMode::Normal,
+        },
+        move || move |task_callback| search_port_command(),
     )
 }
 

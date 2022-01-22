@@ -84,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _print() async {
-    await ttb.availableTutlebots().then((v) {
+    await ttb.searchPortCommand().then((v) {
       v.forEach(debugPrint);
     }).catchError((e) {
       debugPrint("Error: " + e.toString());
