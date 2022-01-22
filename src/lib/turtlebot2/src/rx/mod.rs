@@ -4,7 +4,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Error, Result};
 
-// To pack data into Feedback
 use crate::api::*;
 use crate::tx::*;
 
